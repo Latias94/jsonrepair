@@ -1,0 +1,65 @@
+[package]
+name = "jsonrepair"
+version = "0.1.0"
+edition = "2024"
+authors = ["Mingzhen Zhuang <superfrankie621@gmail.com>"]
+description = "Fast, low-dependency JSON repair for Rust. Turns 'almost JSON' into valid JSON; supports streaming and writer-based output."
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/Latias94/jsonrepair"
+homepage = "https://github.com/Latias94/jsonrepair"
+documentation = "https://docs.rs/jsonrepair"
+readme = "README.md"
+keywords = ["json", "repair", "streaming", "ndjson", "jsonp"]
+categories = ["parsing", "command-line-utilities"]
+exclude = [
+  ".github/*",
+  "scripts/*",
+  "docs/*",
+  "benches/*",
+]
+
+[dependencies]
+memchr = "2"
+thiserror = "2"
+
+[dependencies.serde]
+version = "1"
+optional = true
+features = ["derive"]
+
+[dependencies.serde_json]
+version = "1"
+optional = true
+
+[dev-dependencies]
+criterion = "0.7"
+assert_cmd = "2"
+predicates = "3"
+tempfile = "3"
+
+
+[features]
+default = ["serde"]
+serde = ["dep:serde", "dep:serde_json"]
+compare-crates-io = []
+
+[[bench]]
+name = "repair_bench"
+harness = false
+
+[[bench]]
+name = "stream_bench"
+harness = false
+
+[[bench]]
+name = "container_bench"
+harness = false
+
+[[bin]]
+name = "jr"
+path = "src/bin/jr.rs"
+
+# The default binary name `jsonrepair` is provided by src/main.rs
+
+[package.metadata.docs.rs]
+all-features = true
