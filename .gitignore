@@ -1,5 +1,6 @@
 /target
 /target_bench_tmp
+/target_bench
 .vscode
 .idea
 python_bench.json

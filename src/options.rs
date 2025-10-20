@@ -22,6 +22,9 @@ pub struct Options {
     pub allow_python_keywords: bool,
     /// When true, escape non-ASCII characters in strings as \uXXXX.
     pub ensure_ascii: bool,
+    /// Assume input is valid JSON on fast path and skip full serde validation when possible.
+    /// Only applied when `ensure_ascii == false`. Disabled by default for safety.
+    pub assume_valid_json_fastpath: bool,
     /// Context window size used when building log context snippets.
     /// Controls how many characters are captured on both sides of the position.
     pub log_context_window: usize,
@@ -52,6 +55,9 @@ pub struct Options {
     /// an object/array, close the container early at a nearby safe boundary
     /// instead of failing or emitting null. Disabled by default.
     pub aggressive_truncation_fix: bool,
+    /// Internal: prevent non-streaming parser from delegating to streaming fallback
+    /// to avoid recursive delegation when called from StreamRepairer.
+    pub(crate) internal_no_stream_fallback: bool,
 }
 
 impl Default for Options {
@@ -64,6 +70,7 @@ impl Default for Options {
             logging: false,
             allow_python_keywords: true,
             ensure_ascii: false,
+            assume_valid_json_fastpath: false,
             log_context_window: 10,
             log_json_path: false,
             normalize_js_nonfinite: true,
@@ -75,6 +82,7 @@ impl Default for Options {
             compat_python_friendly: false,
             word_comment_markers: Vec::new(),
             aggressive_truncation_fix: false,
+            internal_no_stream_fallback: false,
         }
     }
 }

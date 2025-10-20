@@ -1,4 +1,4 @@
-use criterion::{Criterion, SamplingMode, black_box, criterion_group, criterion_main};
+use criterion::{Criterion, SamplingMode, criterion_group, criterion_main};
 use std::env;
 use std::time::Duration;
 use jsonrepair::{Options, StreamRepairer};
@@ -16,12 +16,12 @@ fn bench_stream(c: &mut Criterion) {
             let mut total = 0usize;
             for i in 0..1000 {
                 let s = if i % 2 == 0 { "{a:1}\n" } else { "{b:2}\n" };
-                let out = r.push(black_box(s)).unwrap();
+                let out = r.push(std::hint::black_box(s)).unwrap();
                 total += out.len();
             }
             let tail = r.flush().unwrap();
             total += tail.len();
-            black_box(total);
+            std::hint::black_box(total);
         })
     });
 

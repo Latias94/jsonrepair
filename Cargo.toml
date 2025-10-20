@@ -21,6 +21,7 @@ exclude = [
 [dependencies]
 memchr = "2"
 thiserror = "2"
+winnow = "0.7"
 
 [dependencies.serde]
 version = "1"
@@ -36,6 +37,7 @@ criterion = "0.7"
 assert_cmd = "2"
 predicates = "3"
 tempfile = "3"
+llm_json = "1.0.2"
 
 
 [features]
@@ -53,6 +55,14 @@ harness = false
 
 [[bench]]
 name = "container_bench"
+harness = false
+
+[[bench]]
+name = "container_valid_bench"
+harness = false
+
+[[bench]]
+name = "container_llm_bench"
 harness = false
 
 [[bin]]

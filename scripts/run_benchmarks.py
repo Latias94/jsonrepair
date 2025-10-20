@@ -163,8 +163,8 @@ def run_python_benchmark(config: Dict, output_file: str = 'python_bench.json') -
         return False
 
 def run_rust_benchmark(config: Dict) -> bool:
-    """Run Rust benchmark."""
-    print_header("Step 2/3: Running Rust benchmarks (container_bench)")
+    """Run Rust benchmarks (container, stream, writer)."""
+    print_header("Step 2/3: Running Rust benchmarks (container/stream/writer)")
     print_info("This may take a while, please be patient...")
     print()
     
@@ -174,6 +174,8 @@ def run_rust_benchmark(config: Dict) -> bool:
     env['JR_MEAS_SEC'] = str(config['jr_meas_sec'])
     env['JR_WARMUP_SEC'] = str(config['jr_warmup_sec'])
     env['JR_SAMPLE_SIZE'] = str(config['jr_sample_size'])
+    # Use a separate target dir to avoid Windows linker file locks on existing bench executables
+    env.setdefault('CARGO_TARGET_DIR', 'target_bench')
     
     print_info(f"Environment: JR_MIN_BYTES={env['JR_MIN_BYTES']}, "
               f"JR_MEAS_SEC={env['JR_MEAS_SEC']}, "
@@ -182,13 +184,16 @@ def run_rust_benchmark(config: Dict) -> bool:
     print()
     
     try:
-        result = subprocess.run(
-            ['cargo', 'bench', '--bench', 'container_bench'],
-            env=env,
-            check=True
-        )
+        # container benches (including valid_json)
+        subprocess.run(['cargo', 'bench', '--bench', 'container_bench'], env=env, check=True)
+        # extra container bench file for valid_json baseline and llm_json comparator
+        subprocess.run(['cargo', 'bench', '--bench', 'container_valid_bench'], env=env, check=True)
+        subprocess.run(['cargo', 'bench', '--bench', 'container_llm_bench'], env=env, check=True)
+        # streaming & writer benches
+        subprocess.run(['cargo', 'bench', '--bench', 'stream_bench'], env=env, check=True)
+        subprocess.run(['cargo', 'bench', '--bench', 'writer_bench'], env=env, check=True)
         print()
-        print_success("Rust benchmark completed")
+        print_success("Rust benchmarks completed")
         return True
     except subprocess.CalledProcessError as e:
         print_error(f"Rust benchmark failed with exit code {e.returncode}")
@@ -207,8 +212,11 @@ def aggregate_results(config: Dict, output_file: str = 'docs/bench_table.md') ->
     env['JR_MEAS_SEC'] = str(config['jr_meas_sec'])
     env['JR_WARMUP_SEC'] = str(config['jr_warmup_sec'])
     env['JR_SAMPLE_SIZE'] = str(config['jr_sample_size'])
+    env.setdefault('CARGO_TARGET_DIR', 'target_bench')
 
     try:
+        # Ensure output directory exists
+        Path(output_file).parent.mkdir(parents=True, exist_ok=True)
         with open(output_file, 'w', encoding='utf-8') as f:
             result = subprocess.run(
                 [sys.executable, 'scripts/aggregate_bench.py'],
@@ -339,4 +347,6 @@ Examples:
 
 if __name__ == '__main__':
     main()
+
+
 

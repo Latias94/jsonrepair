@@ -1,4 +1,4 @@
-use criterion::{Criterion, Throughput, SamplingMode, black_box, criterion_group, criterion_main};
+use criterion::{Criterion, Throughput, SamplingMode, criterion_group, criterion_main};
 use std::env;
 use std::time::Duration;
 use jsonrepair::{Options, repair_to_writer_streaming};
@@ -35,16 +35,16 @@ fn bench_writer(c: &mut Criterion) {
 
     g.bench_function("to_string", |b| {
         b.iter(|| {
-            let s = jsonrepair::repair_to_string(black_box(&corpus), &opts).unwrap();
-            black_box(s);
+            let s = jsonrepair::repair_to_string(std::hint::black_box(&corpus), &opts).unwrap();
+            std::hint::black_box(s);
         })
     });
 
     g.bench_function("to_writer_streaming", |b| {
         b.iter(|| {
             let mut sink: Vec<u8> = Vec::with_capacity(bytes as usize);
-            repair_to_writer_streaming(black_box(&corpus), &opts, &mut sink).unwrap();
-            black_box(sink);
+            repair_to_writer_streaming(std::hint::black_box(&corpus), &opts, &mut sink).unwrap();
+            std::hint::black_box(sink);
         })
     });
 

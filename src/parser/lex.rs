@@ -1,0 +1,203 @@
+use crate::options::Options;
+use memchr::{memchr, memchr2};
+
+pub fn skip_bom(input: &mut &str) {
+    if let Some(rest) = input.strip_prefix('\u{FEFF}') {
+        *input = rest;
+    }
+}
+
+#[inline]
+fn skip_ascii_ws_only(input: &mut &str) {
+    let s = *input;
+    let bytes = s.as_bytes();
+    let mut i = 0usize;
+    // Fast byte-wise scan for ASCII whitespace: space, tab, LF, CR
+    while i < bytes.len() {
+        match bytes[i] {
+            b' ' | b'\t' | b'\n' | b'\r' => { i += 1; }
+            _ => break,
+        }
+    }
+    *input = &s[i..];
+}
+
+pub fn skip_ws_and_comments(input: &mut &str, opts: &Options) {
+    loop {
+        let before_len = input.len();
+        // Whitespace (ASCII fast path)
+        skip_ascii_ws_only(input);
+
+        let s = *input;
+        if s.is_empty() { break; }
+
+        // // line comment
+        if s.as_bytes().starts_with(b"//") {
+            let rest = &s[2..];
+            let bytes = rest.as_bytes();
+            if let Some(pos) = memchr2(b'\n', b'\r', bytes) {
+                *input = &rest[pos+1..];
+            } else {
+                *input = "";
+            }
+            continue;
+        }
+
+        // /* block comment */
+        if s.as_bytes().starts_with(b"/*") {
+            let rest = &s[2..];
+            let bytes = rest.as_bytes();
+            let mut off = 0usize;
+            let mut closed = false;
+            while let Some(p) = memchr(b'*', &bytes[off..]) {
+                let idx = off + p;
+                if idx + 1 < bytes.len() && bytes[idx + 1] == b'/' {
+                    // found */
+                    *input = &rest[idx + 2..];
+                    closed = true;
+                    break;
+                }
+                off = idx + 1;
+            }
+            if !closed { *input = ""; }
+            continue;
+        }
+
+        // # line comment (optional)
+        if opts.tolerate_hash_comments && s.as_bytes().first() == Some(&b'#') {
+            let rest = &s[1..];
+            let bytes = rest.as_bytes();
+            if let Some(pos) = memchr2(b'\n', b'\r', bytes) {
+                *input = &rest[pos+1..];
+            } else {
+                *input = "";
+            }
+            continue;
+        }
+
+        if before_len == input.len() { break; }
+    }
+}
+
+pub fn starts_with_ident(s: &str) -> bool {
+    match s.chars().next() {
+        Some(c) if c.is_ascii_alphabetic() || c == '_' || c == '$' => true,
+        _ => false,
+    }
+}
+
+pub fn take_ident(s: &str) -> (&str, &str) {
+    let mut end = 0usize;
+    for (i, ch) in s.char_indices() {
+        if i == 0 {
+            if !(ch.is_ascii_alphabetic() || ch == '_' || ch == '$') { break; }
+            end = i + ch.len_utf8();
+        } else {
+            if !(ch.is_ascii_alphanumeric() || ch == '_' || ch == '$') { break; }
+            end = i + ch.len_utf8();
+        }
+    }
+    (&s[..end], &s[end..])
+}
+
+/// Take a non-ASCII-friendly symbol token until a delimiter.
+/// Delimiters: whitespace or one of , [ ] { } ( ) : ' ".
+/// A slash '/' stops only if it starts a comment (// or /*).
+pub fn take_symbol_until_delim<'i>(input: &mut &'i str) -> &'i str {
+    let s = *input;
+    if s.is_empty() { return s; }
+    let b = s.as_bytes();
+    let mut i = 0usize;
+    while i < b.len() {
+        match b[i] {
+            // ASCII whitespace or structural delimiters terminate the token
+            b' ' | b'\t' | b'\n' | b'\r' | b',' | b'[' | b']' | b'{' | b'}' | b'(' | b')' | b':' | b'"' | b'\'' => break,
+            b'/' => {
+                // Stop only if a comment starts
+                if i + 1 < b.len() && (b[i + 1] == b'/' || b[i + 1] == b'*') { break; }
+                i += 1;
+            }
+            _ => {
+                // Any non-ASCII or regular ASCII continues
+                i += 1;
+            }
+        }
+    }
+    let tok = &s[..i];
+    *input = &s[i..];
+    tok
+}
+
+pub fn skip_word_markers(input: &mut &str, markers: &[String]) {
+    if markers.is_empty() { return; }
+    loop {
+        let before = *input;
+        let trimmed = before.trim_start();
+        *input = trimmed;
+        let mut skipped = false;
+        for m in markers {
+            if let Some(rest) = input.strip_prefix(m.as_str()) {
+                *input = rest;
+                skipped = true;
+                break;
+            }
+        }
+        if !skipped { *input = before; break; }
+    }
+}
+
+pub fn skip_ellipsis(input: &mut &str) -> bool {
+    if let Some(rest) = input.strip_prefix("...") {
+        *input = rest;
+        true
+    } else {
+        false
+    }
+}
+
+/// If `s` starts with optional ASCII whitespace, followed by an identifier, optional ASCII
+/// whitespace, and an opening parenthesis '(', return the byte offset to just after '('.
+/// Otherwise return None.
+pub fn jsonp_prefix_len(s: &str) -> Option<usize> {
+    // Skip ASCII whitespace fast
+    let mut idx = 0usize;
+    let bytes = s.as_bytes();
+    while idx < bytes.len() {
+        match bytes[idx] { b' ' | b'\t' | b'\n' | b'\r' => idx += 1, _ => break }
+    }
+    let after_ws = &s[idx..];
+    if !starts_with_ident(after_ws) { return None; }
+    let (_ident, rest) = take_ident(after_ws);
+    let mut off = s.len() - rest.len();
+    // Skip ASCII whitespace again
+    while off < s.len() {
+        match s.as_bytes()[off] { b' ' | b'\t' | b'\n' | b'\r' => off += 1, _ => break }
+    }
+    if off < s.len() && s.as_bytes()[off] == b'(' {
+        Some(off + 1)
+    } else { None }
+}
+
+/// Compute how many bytes to consume after an opening fenced marker ```.
+/// Accepts optional language token (ASCII letters/digits/underscore), optional ASCII spaces/tabs,
+/// and optional single newline (\n or \r). Returns the number of bytes to skip from the given slice.
+/// The input `s` must start immediately after the three backticks.
+pub fn fence_open_lang_newline_len(s: &str) -> usize {
+    let bytes = s.as_bytes();
+    let mut i = 0usize;
+    // optional language token: [A-Za-z0-9_]+
+    while i < bytes.len() {
+        let b = bytes[i];
+        let is_lang = (b >= b'A' && b <= b'Z') || (b >= b'a' && b <= b'z') || (b >= b'0' && b <= b'9') || b == b'_';
+        if is_lang { i += 1; } else { break; }
+    }
+    // optional spaces/tabs
+    while i < bytes.len() {
+        match bytes[i] { b' ' | b'\t' => i += 1, _ => break }
+    }
+    // optional newline (\n or \r)
+    if i < bytes.len() {
+        if bytes[i] == b'\n' || bytes[i] == b'\r' { i += 1; }
+    }
+    i
+}

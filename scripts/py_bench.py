@@ -41,6 +41,8 @@ def corpuses() -> List[Dict[str, Any]]:
     out: List[Dict[str, Any]] = []
     # Align with Rust cases and keys used by aggregator
     out.append({"name":"typical","data":"{a:1, 'b': 'x', c: /re+/, d: 'he' + 'llo'}"})
+    # Valid JSON baseline (must match benches and aggregator)
+    out.append({"name":"valid_json","data":"{\"obj\":{\"a\":1,\"b\":2,\"arr\":[1,2,3],\"s\":\"hello\",\"nested\":{\"x\":true,\"y\":null}}}"})
 
     # Array with large spaces before commas (200 elements, matching Rust)
     for spaces in (64, 1024, 8192):

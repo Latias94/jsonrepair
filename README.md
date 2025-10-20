@@ -167,3 +167,21 @@ References
 
 License
 - MIT or Apache‑2.0
+
+
+Additional Options & Benchmark Fairness
+--------------------------------------
+
+- New option: ssume_valid_json_fastpath: bool`n  - When true and nsure_ascii is false, skip full serde validation for already-legal JSON and directly pass through.
+  - Default: false (safety first). Enable only if you are certain inputs are valid JSON.
+
+- Fairness notes for valid JSON benchmarks:
+  - jsonrepair defaults to strict (validates via serde). We also include an opt-in fastpath row (alid_json_fastpath).
+  - llm_json benches default to strict (skip_json_loads=false) for parity, plus a fastpath row with skip_json_loads=true.
+  - Report keys in docs/bench_table.md:
+    - alid_json/fixed (jsonrepair strict, ensure_ascii=false)
+    - alid_json_ensure_ascii/fixed (jsonrepair strict, ensure_ascii=true)
+    - alid_json_fastpath/fixed (jsonrepair opt-in fastpath)
+    - alid_json_strict/fixed (llm_json strict)
+    - alid_json_fastpath/fixed (llm_json fastpath)
+

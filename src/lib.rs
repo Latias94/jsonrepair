@@ -4,6 +4,8 @@ pub mod error;
 pub mod options;
 mod repair;
 pub mod stream;
+mod emit;
+mod parser;
 
 pub use error::{RepairError, RepairErrorKind};
 pub use options::{LeadingZeroPolicy, Options};

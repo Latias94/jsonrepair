@@ -1,0 +1,14 @@
+# Nextest configuration for jsonrepair project (test timeouts & stability)
+
+[profile.default]
+# Mark a test as slow if it runs longer than this period.
+slow-timeout = { period = "60s", terminate-after = 3 }
+
+# Keep output short and focused; useful on CI.
+failure-output = "immediate"
+success-output = "never"
+
+# Optionally limit parallelism to reduce flakiness on Windows linkers
+# Uncomment if needed:
+# test-threads = 4
+
