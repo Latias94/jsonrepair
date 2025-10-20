@@ -1,3 +1,4 @@
+#[cfg(feature = "logging")]
 use crate::emit::StringEmitter;
 use crate::error::RepairError;
 use crate::options::Options;
@@ -23,16 +24,26 @@ pub(crate) fn repair_to_writer_streaming<W: Write>(
     crate::parser::repair_to_writer_impl(input, opts, writer)
 }
 
+#[cfg(feature = "logging")]
 pub(crate) fn repair_to_string_with_log(
     input: &str,
     opts: &Options,
 ) -> Result<(String, Vec<RepairLogEntry>), RepairError> {
     // Force-enable logging for this call and return captured log entries
-    // reuse parser pre-trim + emit with logger enabled
     let mut out = String::new();
     let mut emitter = StringEmitter::new(&mut out);
     let mut s = crate::parser::pre_trim_wrappers(input, opts);
     let mut logger = crate::parser::Logger::new(true, opts.log_json_path);
     crate::parser::parse_root_many(&mut s, opts, &mut emitter, &mut logger)?;
     Ok((out, logger.into_entries()))
+}
+
+#[cfg(not(feature = "logging"))]
+pub(crate) fn repair_to_string_with_log(
+    input: &str,
+    opts: &Options,
+) -> Result<(String, Vec<RepairLogEntry>), RepairError> {
+    // Logging disabled at compile time: return repaired string with empty log
+    let s = crate::parser::repair_to_string_impl(input, opts)?;
+    Ok((s, Vec::new()))
 }

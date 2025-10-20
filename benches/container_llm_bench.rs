@@ -138,10 +138,11 @@ fn container_llm_bench(c: &mut Criterion) {
     if let Some(meas) = env::var("JR_MEAS_SEC").ok().and_then(|v| v.parse::<u64>().ok()) { group.measurement_time(Duration::from_secs(meas)); } else { group.measurement_time(Duration::from_secs(6)); }
     if let Some(warm) = env::var("JR_WARMUP_SEC").ok().and_then(|v| v.parse::<u64>().ok()) { group.warm_up_time(Duration::from_secs(warm)); } else { group.warm_up_time(Duration::from_secs(2)); }
 
-    let mut opts = llm_json::RepairOptions::default();
-    // Align behavior with our default where practical: strict mode by default
-    opts.ensure_ascii = false;
-    opts.skip_json_loads = false; // keep validation on for fairness with jsonrepair default
+    let opts = llm_json::RepairOptions {
+        ensure_ascii: false,
+        skip_json_loads: false, // keep validation on for fairness with jsonrepair default
+        ..Default::default()
+    };
 
     // Arrays with spaces
     for &spaces in &[64usize, 1024, 8192] {

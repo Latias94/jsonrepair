@@ -4,15 +4,9 @@ use super::*;
 fn collect_stream(mut r: crate::StreamRepairer, chunks: &[String]) -> Vec<String> {
     let mut outs = Vec::new();
     for c in chunks {
-        let s = r.push(c).unwrap();
-        if !s.is_empty() {
-            outs.push(s);
-        }
+        if let Some(s) = r.push(c).unwrap() { outs.push(s); }
     }
-    let tail = r.flush().unwrap();
-    if !tail.is_empty() {
-        outs.push(tail);
-    }
+    if let Some(tail) = r.flush().unwrap() { outs.push(tail); }
     outs
 }
 

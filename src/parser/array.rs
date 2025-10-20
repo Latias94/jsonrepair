@@ -1,3 +1,5 @@
+#![allow(clippy::needless_lifetimes)]
+
 use crate::emit::{Emitter, JRResult};
 use crate::options::Options;
 use super::lex::{skip_ws_and_comments, skip_word_markers, skip_ellipsis};

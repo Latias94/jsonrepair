@@ -1,43 +1,112 @@
+#![allow(clippy::collapsible_if)]
+#![allow(clippy::collapsible_else_if)]
+
 use crate::emit::{Emitter, JRResult};
 use super::lex::skip_ws_and_comments;
 
 /// Parse string literal with optional concatenations or embedded ident-quote form.
-/// Fast path: when no concatenation/embedding follows, emit current literal directly.
+/// 🚀 Optimized: use fast byte-level scanning to check for concatenation.
+/// Fast path (no concat): parse once and emit.
+/// Slow path (has concat): parse and concatenate.
 pub fn parse_string_literal_concat_fast<E: Emitter>(
     input: &mut &str,
     opts: &crate::options::Options,
     out: &mut E,
 ) -> JRResult<()> {
-    // Parse first literal (content only, without quotes)
-    let lit = parse_one_string_literal(input)?;
+    let s = *input;
 
-    // Probe lookahead for '+' concatenation or embedded ident + quote
-    let mut look = *input;
-    skip_ws_and_comments(&mut look, opts);
-    let no_plus = !look.starts_with('+');
-    // Detect embedded pattern: <ident><quote>
-    let mut id_end = 0usize;
-    for (i, ch) in look.char_indices() {
-        if i == 0 {
-            if !(ch.is_ascii_alphabetic() || ch == '_' || ch == '$') { break; }
-            id_end = i + ch.len_utf8();
+    // 🚀 Quick check: is this even a string?
+    let quote = match s.as_bytes().first() {
+        Some(&b'"') => b'"',
+        Some(&b'\'') => b'\'',
+        _ => return Ok(()),
+    };
+
+    // 🚀 Fast scan to find the end of the string (byte-level)
+    let bytes = s.as_bytes();
+    let mut i = 1usize; // skip opening quote
+    let mut escape = false;
+    while i < bytes.len() {
+        let b = bytes[i];
+        if escape {
+            escape = false;
+            i += 1;
+            continue;
+        }
+        if b == b'\\' {
+            escape = true;
+            i += 1;
+            continue;
+        }
+        if b == quote {
+            i += 1; // include closing quote
+            break;
+        }
+        // Handle multi-byte UTF-8 characters
+        if b >= 0x80 {
+            // Multi-byte character, skip it
+            let ch = s[i..].chars().next().unwrap();
+            i += ch.len_utf8();
         } else {
-            if !(ch.is_ascii_alphanumeric() || ch == '_' || ch == '$') { break; }
-            id_end = i + ch.len_utf8();
+            i += 1;
         }
     }
-    let has_embed = if id_end > 0 {
-        let rest = &look[id_end..];
-        matches!(rest.chars().next(), Some('"') | Some('\''))
-    } else { false };
 
-    if no_plus && !has_embed {
+    // 🚀 Peek ahead after the string to check for concatenation
+    let after_string = &s[i..];
+    let mut look = after_string;
+    skip_ws_and_comments(&mut look, opts);
+
+    // Quick byte-level check for '+' concatenation
+    let has_concat = look.as_bytes().first() == Some(&b'+');
+
+    // Check for embedded pattern: <ident><quote> (only if no '+')
+    let has_embed = if !has_concat {
+        // Fast ASCII identifier check
+        let look_bytes = look.as_bytes();
+        let mut id_end = 0usize;
+        while id_end < look_bytes.len() {
+            let b = look_bytes[id_end];
+            if id_end == 0 {
+                if !(b.is_ascii_alphabetic() || b == b'_' || b == b'$') {
+                    break;
+                }
+            } else if !(b.is_ascii_alphanumeric() || b == b'_' || b == b'$') {
+                break;
+            }
+            id_end += 1;
+        }
+        if id_end > 0 && id_end < look_bytes.len() {
+            let next_b = look_bytes[id_end];
+            next_b == b'"' || next_b == b'\''
+        } else {
+            false
+        }
+    } else {
+        false
+    };
+
+    // 🚀 Fast path - no concatenation, parse once and emit
+    if !has_concat && !has_embed {
+        let lit = parse_one_string_literal(input)?;
         return emit_json_string_from_lit(out, &lit, opts.ensure_ascii);
     }
 
-    // Slow path: materialize concatenations
+    // 🔴 Slow path - has concatenation, use temporary buffer
+    let lit = parse_one_string_literal(input)?;
     let mut acc = String::new();
     acc.push_str(&lit);
+    *input = after_string;
+    finish_string_concat(input, opts, out, acc)
+}
+
+/// Helper to finish string concatenation after the first string is already parsed
+fn finish_string_concat<E: Emitter>(
+    input: &mut &str,
+    opts: &crate::options::Options,
+    out: &mut E,
+    mut acc: String,
+) -> JRResult<()> {
     loop {
         skip_ws_and_comments(input, opts);
         if let Some(r) = input.strip_prefix('+') {
@@ -85,58 +154,8 @@ pub fn parse_string_literal_concat_fast<E: Emitter>(
     }
     emit_json_string_from_lit(out, &acc, opts.ensure_ascii)
 }
-#[allow(dead_code)]
-pub fn parse_string_literal_concat<E: Emitter>(input: &mut &str, opts: &crate::options::Options, out: &mut E) -> JRResult<()> {
-    // 解析一个字符串字面量，并支持后续的拼接：
-    // 1) 使用加号连接："a" + "b"
-    // 2) 内嵌引号修复："lorem "ipsum" sic" -> 合并为单个字符串
-    let mut acc = String::new();
-    let lit = parse_one_string_literal(input)?;
-    acc.push_str(&lit);
-    loop {
-        // 跳过空白和注释，优先处理 + 拼接
-        skip_ws_and_comments(input, opts);
-        if let Some(r) = input.strip_prefix('+') {
-            *input = r;
-            skip_ws_and_comments(input, opts);
-            let lit2 = parse_one_string_literal(input)?;
-            acc.push_str(&lit2);
-            continue;
-        }
-        // 内嵌引号启发式：紧跟未引号的标识符 + 同样的引号 + 下一段字符串
-        let sref = *input;
-        // 读取标识符
-        let mut id_end = 0usize;
-        for (i, ch) in sref.char_indices() {
-            if i == 0 {
-                if !(ch.is_ascii_alphabetic() || ch == '_' || ch == '$') { break; }
-                id_end = i + ch.len_utf8();
-            } else {
-                if !(ch.is_ascii_alphanumeric() || ch == '_' || ch == '$') { break; }
-                id_end = i + ch.len_utf8();
-            }
-        }
-        if id_end > 0 {
-            let ident = &sref[..id_end];
-            let rest = &sref[id_end..];
-            if let Some(q) = rest.chars().next() {
-                if q == '"' || q == '\'' {
-                    // 消耗 ident 和一个引号
-                    *input = &rest[q.len_utf8()..];
-                    // 并入累积字符串："ident"
-                    acc.push(q);
-                    acc.push_str(ident);
-                    acc.push(q);
-                    // 继续读取字符串直至下一个匹配引号
-                    let s2 = *input; let mut idx = 0usize; while idx < s2.len() { let ch = s2[idx..].chars().next().unwrap(); let l = ch.len_utf8(); if ch == q { *input = &s2[idx + l..]; break; } acc.push(ch); idx += l; }
-                    continue;
-                }
-            }
-        }
-        break;
-    }
-    emit_json_string_from_lit(out, &acc, opts.ensure_ascii)
-}pub fn parse_one_string_literal(input: &mut &str) -> JRResult<String> {
+
+pub fn parse_one_string_literal(input: &mut &str) -> JRResult<String> {
     let s = *input;
     let mut it = s.char_indices();
     let (start_i, quote) = match it.next() {
@@ -315,7 +334,5 @@ pub fn emit_json_string_from_lit<E: Emitter>(out: &mut E, s: &str, ensure_ascii:
     }
     out.emit_char('"')
 }
-
-
 
 

@@ -55,9 +55,10 @@ pub struct Options {
     /// an object/array, close the container early at a nearby safe boundary
     /// instead of failing or emitting null. Disabled by default.
     pub aggressive_truncation_fix: bool,
-    /// Internal: prevent non-streaming parser from delegating to streaming fallback
-    /// to avoid recursive delegation when called from StreamRepairer.
-    pub(crate) internal_no_stream_fallback: bool,
+    /// Internal flag to prevent recursive delegation to stream fallback.
+    /// Not intended for public use.
+    #[doc(hidden)]
+    pub internal_no_stream_fallback: bool,
 }
 
 impl Default for Options {

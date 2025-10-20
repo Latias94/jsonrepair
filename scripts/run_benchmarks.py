@@ -185,13 +185,14 @@ def run_rust_benchmark(config: Dict) -> bool:
     
     try:
         # container benches (including valid_json)
-        subprocess.run(['cargo', 'bench', '--bench', 'container_bench'], env=env, check=True)
+        bench_args = ['--no-default-features', '--features', 'serde']
+        subprocess.run(['cargo', 'bench', '--bench', 'container_bench', *bench_args], env=env, check=True)
         # extra container bench file for valid_json baseline and llm_json comparator
-        subprocess.run(['cargo', 'bench', '--bench', 'container_valid_bench'], env=env, check=True)
-        subprocess.run(['cargo', 'bench', '--bench', 'container_llm_bench'], env=env, check=True)
+        subprocess.run(['cargo', 'bench', '--bench', 'container_valid_bench', *bench_args], env=env, check=True)
+        subprocess.run(['cargo', 'bench', '--bench', 'container_llm_bench', *bench_args], env=env, check=True)
         # streaming & writer benches
-        subprocess.run(['cargo', 'bench', '--bench', 'stream_bench'], env=env, check=True)
-        subprocess.run(['cargo', 'bench', '--bench', 'writer_bench'], env=env, check=True)
+        subprocess.run(['cargo', 'bench', '--bench', 'stream_bench', *bench_args], env=env, check=True)
+        subprocess.run(['cargo', 'bench', '--bench', 'writer_bench', *bench_args], env=env, check=True)
         print()
         print_success("Rust benchmarks completed")
         return True

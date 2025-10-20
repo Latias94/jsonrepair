@@ -33,7 +33,7 @@ fn deep_ndjson_with_fenced_and_jsonp_streaming_aggregate() {
     for p in parts.iter() {
         let _ = r.push(p).unwrap();
     }
-    let out = r.flush().unwrap();
+    let out = r.flush().unwrap().unwrap();
     let v: serde_json::Value = serde_json::from_str(&out).unwrap();
     assert_eq!(v, serde_json::json!([{"a":1},{"b":2},{"c":3}]));
 }

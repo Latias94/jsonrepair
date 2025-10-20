@@ -79,16 +79,8 @@ fn streaming_concat_strings_cross_chunks() {
     let sizes = super::lcg_sizes(2024, input.chars().count());
     let parts = super::chunk_by_char(input, &sizes);
     let mut outs = Vec::new();
-    for p in parts.iter() {
-        let s = r.push(p).unwrap();
-        if !s.is_empty() {
-            outs.push(s);
-        }
-    }
-    let tail = r.flush().unwrap();
-    if !tail.is_empty() {
-        outs.push(tail);
-    }
+    for p in parts.iter() { if let Some(s) = r.push(p).unwrap() { outs.push(s); } }
+    if let Some(tail) = r.flush().unwrap() { outs.push(tail); }
     assert_eq!(outs.len(), 1);
     let v: serde_json::Value = serde_json::from_str(&outs[0]).unwrap();
     assert_eq!(v, serde_json::json!(["你好", "ab"]));
@@ -105,7 +97,7 @@ fn streaming_ndjson_aggregate_with_comments_and_blanks() {
     for p in parts.iter() {
         let _ = r.push(p).unwrap();
     }
-    let s = r.flush().unwrap();
+    let s = r.flush().unwrap().unwrap();
     let v: serde_json::Value = serde_json::from_str(&s).unwrap();
     assert_eq!(v, serde_json::json!([{"a":1},{"b":2}]));
 }
@@ -117,16 +109,8 @@ fn streaming_jsonp_fenced_unicode_random_chunks() {
     let sizes = super::lcg_sizes(7777, input.chars().count());
     let parts = super::chunk_by_char(input, &sizes);
     let mut outs = Vec::new();
-    for p in parts.iter() {
-        let s = r.push(p).unwrap();
-        if !s.is_empty() {
-            outs.push(s);
-        }
-    }
-    let tail = r.flush().unwrap();
-    if !tail.is_empty() {
-        outs.push(tail);
-    }
+    for p in parts.iter() { if let Some(s) = r.push(p).unwrap() { outs.push(s); } }
+    if let Some(tail) = r.flush().unwrap() { outs.push(tail); }
     assert_eq!(outs.len(), 1);
     let v: serde_json::Value = serde_json::from_str(&outs[0]).unwrap();
     assert_eq!(v, serde_json::json!({"a":"你好"}));

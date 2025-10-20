@@ -1,4 +1,4 @@
-use criterion::{Criterion, black_box, criterion_group, criterion_main};
+use criterion::{Criterion, criterion_group, criterion_main};
 use jsonrepair::{Options, repair_to_string};
 
 fn bench_repair(c: &mut Criterion) {
@@ -20,8 +20,8 @@ fn bench_repair(c: &mut Criterion) {
     for (i, s) in cases.into_iter().enumerate() {
         group.bench_function(format!("case_{}", i), |b| {
             b.iter(|| {
-                let out = repair_to_string(black_box(s), &opts).unwrap();
-                black_box(out);
+                let out = repair_to_string(std::hint::black_box(s), &opts).unwrap();
+                std::hint::black_box(out);
             })
         });
     }

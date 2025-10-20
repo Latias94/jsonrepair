@@ -21,7 +21,6 @@ exclude = [
 [dependencies]
 memchr = "2"
 thiserror = "2"
-winnow = "0.7"
 
 [dependencies.serde]
 version = "1"
@@ -41,8 +40,9 @@ llm_json = "1.0.2"
 
 
 [features]
-default = ["serde"]
+default = ["serde", "logging"]
 serde = ["dep:serde", "dep:serde_json"]
+logging = []
 compare-crates-io = []
 
 [[bench]]

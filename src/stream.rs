@@ -1,3 +1,5 @@
+#![allow(clippy::collapsible_if)]
+
 use crate::classify::{is_double_quote_like, is_single_quote_like, is_whitespace};
 use crate::error::{RepairError, RepairErrorKind};
 use crate::{Options, repair_to_string};
@@ -113,7 +115,11 @@ impl StreamRepairer {
         Ok(())
     }
 
-    pub fn push(&mut self, chunk: &str) -> Result<String, RepairError> {
+    /// Push a UTF-8 chunk into the streaming repairer and return any completed JSON text.
+    ///
+    /// Returns `Some(String)` when this call produces a complete root-level JSON value;
+    /// otherwise returns `None` (no output yet).
+    pub fn push(&mut self, chunk: &str) -> Result<Option<String>, RepairError> {
         self.buf.push_str(chunk);
         let mut out = String::new();
         let mut i = self.scan_pos;
@@ -430,8 +436,9 @@ impl StreamRepairer {
             }
         }
         self.scan_pos = i;
-        Ok(out)
+        if out.is_empty() { Ok(None) } else { Ok(Some(out)) }
     }
+
 
     /// Stream input chunk and write any completed repaired JSON values directly into `writer`.
     ///
@@ -819,7 +826,10 @@ impl StreamRepairer {
         Ok(())
     }
 
-    pub fn flush(&mut self) -> Result<String, RepairError> {
+    /// Flush any remaining buffered content.
+    ///
+    /// Returns `Some(String)` when there is final output to emit; otherwise `None`.
+    pub fn flush(&mut self) -> Result<Option<String>, RepairError> {
         let mut out = String::new();
         if self.seg_start < self.buf.len() {
             // If nothing meaningful collected at root, skip repairing
@@ -834,8 +844,8 @@ impl StreamRepairer {
                 self.seg_start = 0;
                 self.scan_pos = 0;
                 // if aggregating and already opened, close and return aggregated array
-                if self.opts.stream_ndjson_aggregate { return Ok(self.agg_finish_str().unwrap_or_default()); }
-                else { return Ok(out); }
+                if self.opts.stream_ndjson_aggregate { return Ok(self.agg_finish_str()); }
+                else { return Ok(if out.is_empty() { None } else { Some(out) }); }
             }
             let s = self.buf[self.seg_start..].to_string();
             let fixed = repair_to_string(&s, &self.opts)?;
@@ -856,7 +866,7 @@ impl StreamRepairer {
         self.in_block_comment = false;
         self.value_started = false;
         self.last_sig_end = 0;
-        if self.opts.stream_ndjson_aggregate { Ok(self.agg_finish_str().unwrap_or_default()) } else { Ok(out) }
+        if self.opts.stream_ndjson_aggregate { Ok(self.agg_finish_str()) } else { Ok(if out.is_empty() { None } else { Some(out) }) }
     }
 
     fn emit_segment(&mut self, end: usize) -> Result<String, RepairError> {

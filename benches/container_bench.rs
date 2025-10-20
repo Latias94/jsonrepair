@@ -116,7 +116,7 @@ fn gen_trailing_commas() -> String {
     // Object and array with trailing commas sprinkled
     let mut s = String::new();
     s.push_str("{a:1,b:2,c:3,}"); // trailing comma
-    s.push_str("\n");
+    s.push('\n');
     s.push_str("[1,2,3,]\n"); // trailing comma
     s
 }

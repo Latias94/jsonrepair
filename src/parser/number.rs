@@ -1,3 +1,6 @@
+#![allow(clippy::collapsible_if)]
+#![allow(clippy::needless_borrow)]
+
 use crate::emit::{Emitter, JRResult};
 use crate::options::{LeadingZeroPolicy, Options};
 
@@ -156,9 +159,9 @@ pub fn parse_number_token<E: Emitter>(input: &mut &str, opts: &Options, out: &mu
 
     // Leading dot tolerance
     if started_with_dot && opts.number_tolerance_leading_dot {
-        if tok.starts_with('-') {
+        if let Some(stripped) = tok.strip_prefix('-') {
             let mut buf = String::from("-0");
-            buf.push_str(&tok[1..]);
+            buf.push_str(stripped);
             return out.emit_str(&buf);
         } else {
             let mut buf = String::from("0");

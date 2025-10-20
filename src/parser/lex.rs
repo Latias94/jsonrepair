@@ -7,83 +7,84 @@ pub fn skip_bom(input: &mut &str) {
     }
 }
 
+/// Optimized combined whitespace and comment skipper.
+/// 🟢 Uses memchr for fast comment scanning while maintaining fast ASCII whitespace path.
 #[inline]
-fn skip_ascii_ws_only(input: &mut &str) {
-    let s = *input;
-    let bytes = s.as_bytes();
-    let mut i = 0usize;
-    // Fast byte-wise scan for ASCII whitespace: space, tab, LF, CR
-    while i < bytes.len() {
-        match bytes[i] {
-            b' ' | b'\t' | b'\n' | b'\r' => { i += 1; }
-            _ => break,
-        }
-    }
-    *input = &s[i..];
-}
-
 pub fn skip_ws_and_comments(input: &mut &str, opts: &Options) {
     loop {
         let before_len = input.len();
-        // Whitespace (ASCII fast path)
-        skip_ascii_ws_only(input);
 
+        // Fast ASCII whitespace scan using byte-level operations
         let s = *input;
-        if s.is_empty() { break; }
+        let bytes = s.as_bytes();
+        let mut i = 0usize;
+        while i < bytes.len() {
+            match bytes[i] {
+                b' ' | b'\t' | b'\n' | b'\r' => i += 1,
+                _ => break,
+            }
+        }
+        *input = &s[i..];
 
-        // // line comment
-        if s.as_bytes().starts_with(b"//") {
-            let rest = &s[2..];
+        if input.is_empty() { break; }
+
+        // Line comment: //
+        if input.as_bytes().starts_with(b"//") {
+            let rest = &input[2..];
             let bytes = rest.as_bytes();
+            // 🟢 Use memchr to quickly find newline
             if let Some(pos) = memchr2(b'\n', b'\r', bytes) {
-                *input = &rest[pos+1..];
+                *input = &rest[pos + 1..];
             } else {
                 *input = "";
             }
             continue;
         }
 
-        // /* block comment */
-        if s.as_bytes().starts_with(b"/*") {
-            let rest = &s[2..];
+        // Block comment: /* */
+        if input.as_bytes().starts_with(b"/*") {
+            let rest = &input[2..];
             let bytes = rest.as_bytes();
+            // 🟢 Use memchr to quickly find '*', then check for '/'
             let mut off = 0usize;
             let mut closed = false;
             while let Some(p) = memchr(b'*', &bytes[off..]) {
                 let idx = off + p;
                 if idx + 1 < bytes.len() && bytes[idx + 1] == b'/' {
-                    // found */
                     *input = &rest[idx + 2..];
                     closed = true;
                     break;
                 }
                 off = idx + 1;
             }
-            if !closed { *input = ""; }
+            if !closed {
+                *input = "";
+            }
             continue;
         }
 
-        // # line comment (optional)
-        if opts.tolerate_hash_comments && s.as_bytes().first() == Some(&b'#') {
-            let rest = &s[1..];
+        // Hash comment: #
+        if opts.tolerate_hash_comments && input.as_bytes().first() == Some(&b'#') {
+            let rest = &input[1..];
             let bytes = rest.as_bytes();
+            // 🟢 Use memchr to quickly find newline
             if let Some(pos) = memchr2(b'\n', b'\r', bytes) {
-                *input = &rest[pos+1..];
+                *input = &rest[pos + 1..];
             } else {
                 *input = "";
             }
             continue;
         }
 
-        if before_len == input.len() { break; }
+        // No progress made, exit
+        if before_len == input.len() {
+            break;
+        }
     }
 }
 
 pub fn starts_with_ident(s: &str) -> bool {
-    match s.chars().next() {
-        Some(c) if c.is_ascii_alphabetic() || c == '_' || c == '$' => true,
-        _ => false,
-    }
+    matches!(s.chars().next(), Some(c) if c.is_ascii_alphabetic() || c == '_' || c == '$')
 }
 
 pub fn take_ident(s: &str) -> (&str, &str) {
@@ -128,18 +129,32 @@ pub fn take_symbol_until_delim<'i>(input: &mut &'i str) -> &'i str {
     tok
 }
 
+/// Skip known "word markers" (e.g., COMMENT) only when present at the
+/// current cursor. This function first trims ASCII whitespace, then performs
+/// a direct prefix check for each marker. It avoids entering heavier paths
+/// when the first character cannot possibly match any marker.
 pub fn skip_word_markers(input: &mut &str, markers: &[String]) {
     if markers.is_empty() { return; }
     loop {
         let before = *input;
-        let trimmed = before.trim_start();
-        *input = trimmed;
+        // Fast ASCII whitespace trim
+        let s0 = *input;
+        let bytes = s0.as_bytes();
+        let mut i = 0usize;
+        while i < bytes.len() {
+            match bytes[i] { b' ' | b'\t' | b'\n' | b'\r' => i += 1, _ => break }
+        }
+        *input = &s0[i..];
+        let s1 = *input;
+        // Quick pre-filter on first char
         let mut skipped = false;
-        for m in markers {
-            if let Some(rest) = input.strip_prefix(m.as_str()) {
-                *input = rest;
-                skipped = true;
-                break;
+        if let Some(_c0) = s1.chars().next() {
+            for m in markers {
+                if s1.starts_with(m.as_str()) {
+                    *input = &s1[m.len()..];
+                    skipped = true;
+                    break;
+                }
             }
         }
         if !skipped { *input = before; break; }
@@ -188,7 +203,7 @@ pub fn fence_open_lang_newline_len(s: &str) -> usize {
     // optional language token: [A-Za-z0-9_]+
     while i < bytes.len() {
         let b = bytes[i];
-        let is_lang = (b >= b'A' && b <= b'Z') || (b >= b'a' && b <= b'z') || (b >= b'0' && b <= b'9') || b == b'_';
+        let is_lang = b.is_ascii_alphanumeric() || b == b'_';
         if is_lang { i += 1; } else { break; }
     }
     // optional spaces/tabs
@@ -196,8 +211,8 @@ pub fn fence_open_lang_newline_len(s: &str) -> usize {
         match bytes[i] { b' ' | b'\t' => i += 1, _ => break }
     }
     // optional newline (\n or \r)
-    if i < bytes.len() {
-        if bytes[i] == b'\n' || bytes[i] == b'\r' { i += 1; }
+    if i < bytes.len() && (bytes[i] == b'\n' || bytes[i] == b'\r') {
+        i += 1;
     }
     i
 }

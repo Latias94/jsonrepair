@@ -9,16 +9,8 @@ fn run_streaming_collect(input: &str, opts: Options) -> String {
     let sizes = super::lcg_sizes(98765, input.chars().count());
     let parts = super::chunk_by_char(input, &sizes);
     let mut outs = String::new();
-    for p in parts.iter() {
-        let s = r.push(p).unwrap();
-        if !s.is_empty() {
-            outs.push_str(&s);
-        }
-    }
-    let tail = r.flush().unwrap();
-    if !tail.is_empty() {
-        outs.push_str(&tail);
-    }
+    for p in parts.iter() { if let Some(s) = r.push(p).unwrap() { outs.push_str(&s); } }
+    if let Some(tail) = r.flush().unwrap() { outs.push_str(&tail); }
     outs
 }
 
@@ -134,31 +126,15 @@ fn fuzz_streaming_random_chunk_sizes_stability() {
     let sizes1 = super::lcg_sizes(1, input.chars().count());
     let parts1 = super::chunk_by_char(input, &sizes1);
     let mut outs1 = String::new();
-    for p in parts1.iter() {
-        let s = r1.push(p).unwrap();
-        if !s.is_empty() {
-            outs1.push_str(&s);
-        }
-    }
-    let t1 = r1.flush().unwrap();
-    if !t1.is_empty() {
-        outs1.push_str(&t1);
-    }
+    for p in parts1.iter() { if let Some(s) = r1.push(p).unwrap() { outs1.push_str(&s); } }
+    if let Some(t1) = r1.flush().unwrap() { outs1.push_str(&t1); }
 
     let mut r2 = crate::StreamRepairer::new(o);
     let sizes2 = super::lcg_sizes(2, input.chars().count());
     let parts2 = super::chunk_by_char(input, &sizes2);
     let mut outs2 = String::new();
-    for p in parts2.iter() {
-        let s = r2.push(p).unwrap();
-        if !s.is_empty() {
-            outs2.push_str(&s);
-        }
-    }
-    let t2 = r2.flush().unwrap();
-    if !t2.is_empty() {
-        outs2.push_str(&t2);
-    }
+    for p in parts2.iter() { if let Some(s) = r2.push(p).unwrap() { outs2.push_str(&s); } }
+    if let Some(t2) = r2.flush().unwrap() { outs2.push_str(&t2); }
 
     let v_ns: serde_json::Value = serde_json::from_str(&ns).unwrap();
     let v1: serde_json::Value = serde_json::from_str(&outs1).unwrap();

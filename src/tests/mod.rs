@@ -57,6 +57,7 @@ mod comments_edge;
 mod comments_ws;
 mod core_non_streaming;
 mod deep_malformed;
+mod file_operations;
 mod jsonp_fence;
 mod logging_more;
 mod logging_path;

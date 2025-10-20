@@ -44,8 +44,10 @@ fn valid_bench(c: &mut Criterion) {
     });
 
     // valid JSON, ensure_ascii=true (ASCII-escaped)
-    let mut opts_ascii = Options::default();
-    opts_ascii.ensure_ascii = true;
+    let opts_ascii = Options {
+        ensure_ascii: true,
+        ..Default::default()
+    };
     let input2 = input.clone();
     group.throughput(Throughput::Bytes(input2.len() as u64));
     group.bench_with_input(BenchmarkId::new("valid_json_ensure_ascii", "fixed"), &input2, |b, s| {
@@ -56,8 +58,10 @@ fn valid_bench(c: &mut Criterion) {
     });
 
     // valid JSON, fastpath (assume valid; skip serde validation)
-    let mut opts_fast = Options::default();
-    opts_fast.assume_valid_json_fastpath = true;
+    let opts_fast = Options {
+        assume_valid_json_fastpath: true,
+        ..Default::default()
+    };
     let input3 = input.clone();
     group.throughput(Throughput::Bytes(input3.len() as u64));
     group.bench_with_input(BenchmarkId::new("valid_json_fastpath", "fixed"), &input3, |b, s| {

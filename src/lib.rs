@@ -43,15 +43,11 @@ where
     let mut r = StreamRepairer::new(opts.clone());
     let mut out = String::new();
     for c in chunks.into_iter() {
-        let s = r.push(c)?;
-        if !s.is_empty() {
+        if let Some(s) = r.push(c)? {
             out.push_str(&s);
         }
     }
-    let tail = r.flush()?;
-    if !tail.is_empty() {
-        out.push_str(&tail);
-    }
+    if let Some(tail) = r.flush()? { out.push_str(&tail); }
     Ok(out)
 }
 
