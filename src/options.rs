@@ -1,62 +1,79 @@
 #[derive(Clone, Debug, Copy, PartialEq, Eq)]
 pub enum LeadingZeroPolicy {
-    /// Keep numbers with leading zeros as-is (may be non-strict JSON, but pragmatic).
+    /// Keep numbers with leading zeros as-is (may be non‑strict JSON, but pragmatic).
+    /// Example: "{\"n\": 007}" stays as a number token. Default.
     KeepAsNumber,
-    /// Quote numbers with leading zeros as strings, like "007".
+    /// Quote numbers with leading zeros as strings.
+    /// Example: "{\"n\": 007}" becomes "{\"n\": \"007\"}".
     QuoteAsString,
 }
 
 #[derive(Clone, Debug)]
 pub struct Options {
     /// Treat `#` as a line comment (in addition to // and /* */) when not inside strings.
+    /// Default: true. Disable for strict JSON.
     pub tolerate_hash_comments: bool,
     /// Convert the JavaScript value `undefined` into `null` when encountered as a value or symbol.
+    /// Default: true. Matches common JSON‑like inputs from JS/LLMs.
     pub repair_undefined: bool,
     /// Policy for numbers with leading zeros like 007.
     pub leading_zero_policy: LeadingZeroPolicy,
     /// Skip Markdown fenced code block like ```json ... ``` around the JSON.
+    /// When multiple fenced blocks exist, the parser aggregates their JSON bodies into a JSON array.
+    /// Default: true.
     pub fenced_code_blocks: bool,
     /// Enable repair logging. Use `repair_to_string_with_log` to retrieve logs.
+    /// Default: false (avoids overhead unless explicitly requested).
     pub logging: bool,
     /// Accept and normalize Python-style keywords True/False/None.
+    /// Default: true to improve Python compatibility.
     pub allow_python_keywords: bool,
     /// When true, escape non-ASCII characters in strings as \uXXXX.
+    /// Default: false (preserve Unicode).
     pub ensure_ascii: bool,
-    /// Assume input is valid JSON on fast path and skip full serde validation when possible.
-    /// Only applied when `ensure_ascii == false`. Disabled by default for safety.
+    /// Assume input is valid JSON and skip full serde roundtrip when possible.
+    /// Applies only when `ensure_ascii == false`. Default: false (safer).
+    /// Python bindings may set this when `skip_json_loads=True`.
     pub assume_valid_json_fastpath: bool,
     /// Context window size used when building log context snippets.
     /// Controls how many characters are captured on both sides of the position.
+    /// Default: 10.
     pub log_context_window: usize,
     /// When enabled, attach a JSON path to log entries (non-streaming only).
-    /// Currently tracks array indices; object keys will be added in a next iteration.
+    /// Tracks array indices and object keys where available. Default: false.
     pub log_json_path: bool,
     /// Normalize JavaScript non-finite numbers (NaN/Infinity/-Infinity) to null.
-    /// Enabled by default for pragmatic interoperability.
+    /// Default: true for pragmatic interoperability.
     pub normalize_js_nonfinite: bool,
     /// Aggregate streaming NDJSON outputs into a single JSON array.
-    /// When enabled, `StreamRepairer::push` will buffer values and only emit on `flush()`.
+    /// When enabled, `StreamRepairer::push` buffers values and emits on `flush()`.
+    /// Default: false (emit per record).
     pub stream_ndjson_aggregate: bool,
-    /// Tolerance: treat a leading dot ".25" as "0.25".
+    /// Tolerance: treat a leading dot ".25" as "0.25". Default: true.
     pub number_tolerance_leading_dot: bool,
-    /// Tolerance: treat a trailing dot "1." as "1.0".
+    /// Tolerance: treat a trailing dot "1." as "1.0". Default: true.
     pub number_tolerance_trailing_dot: bool,
     /// Tolerance: an incomplete exponent like "1e" falls back to the base number "1".
+    /// Default: true.
     pub number_tolerance_incomplete_exponent: bool,
-    /// Quote suspicious number-like tokens containing non-number separators (e.g. 1/3, 10-20).
-    /// Currently reserved for future use.
+    /// Quote suspicious number-like tokens containing non-number separators (e.g., 1/3, 10-20),
+    /// multiple dots (e.g., 1.1.1), or mixed alphanumerics (e.g., 2notanumber). Default: true.
     pub number_quote_suspicious: bool,
     /// Compatibility preset: enable Python-friendly tolerance behaviors.
+    /// Currently reserved for broader presets. Default: false.
     pub compat_python_friendly: bool,
-    /// Optional word comment markers like "COMMENT" that will be stripped
-    /// when found in safe positions (e.g., before an object key). Empty by default.
+    /// Optional word comment markers like "COMMENT" that will be stripped when found in safe
+    /// positions (e.g., immediately before an object key). Default: empty.
     pub word_comment_markers: Vec<String>,
-    /// Aggressive truncation fix: when encountering extreme truncation inside
-    /// an object/array, close the container early at a nearby safe boundary
-    /// instead of failing or emitting null. Disabled by default.
+    /// Aggressive truncation fix: when encountering extreme truncation inside an object/array,
+    /// close the container early at a nearby safe boundary instead of failing or emitting null.
+    /// Default: false (enable only when you need best‑effort recovery for highly truncated inputs).
     pub aggressive_truncation_fix: bool,
-    /// Internal flag to prevent recursive delegation to stream fallback.
-    /// Not intended for public use.
+    /// Output formatting: use Python-style separators (", ", ": ") when serializing
+    /// the final JSON string. When enabled, the output matches common Python expectations
+    /// like '{"a": 1, "b": 2}'. Default: false.
+    pub python_style_separators: bool,
+    /// Internal flag to prevent recursive delegation to stream fallback. Not public API.
     #[doc(hidden)]
     pub internal_no_stream_fallback: bool,
 }
@@ -82,7 +99,8 @@ impl Default for Options {
             number_quote_suspicious: true,
             compat_python_friendly: false,
             word_comment_markers: Vec::new(),
-            aggressive_truncation_fix: false,
+        aggressive_truncation_fix: false,
+            python_style_separators: false,
             internal_no_stream_fallback: false,
         }
     }

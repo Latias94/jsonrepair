@@ -46,8 +46,14 @@ fn st_concat_three_with_comments_between() {
     let mut r = crate::StreamRepairer::new(Options::default());
     let parts = ["\"a\"", "/*c*/ + ", "\"b\" + ", "//x\n", "\"c\"\n"]; // one string
     let mut outs = Vec::new();
-    for p in parts.iter() { if let Some(s) = r.push(p).unwrap() { outs.push(s); } }
-    if let Some(tail) = r.flush().unwrap() { outs.push(tail); }
+    for p in parts.iter() {
+        if let Some(s) = r.push(p).unwrap() {
+            outs.push(s);
+        }
+    }
+    if let Some(tail) = r.flush().unwrap() {
+        outs.push(tail);
+    }
     assert_eq!(outs.len(), 1);
     assert_eq!(outs[0], "\"abc\"");
 }
@@ -57,8 +63,14 @@ fn st_regex_split_variant() {
     let mut r = crate::StreamRepairer::new(Options::default());
     let parts = ["/a", "b+/", "\n"]; // string value
     let mut outs = Vec::new();
-    for p in parts.iter() { if let Some(s) = r.push(p).unwrap() { outs.push(s); } }
-    if let Some(tail) = r.flush().unwrap() { outs.push(tail); }
+    for p in parts.iter() {
+        if let Some(s) = r.push(p).unwrap() {
+            outs.push(s);
+        }
+    }
+    if let Some(tail) = r.flush().unwrap() {
+        outs.push(tail);
+    }
     assert_eq!(outs.len(), 1);
     assert_eq!(outs[0].trim_end(), "\"/ab+/\"");
 }
@@ -68,7 +80,11 @@ fn st_fence_language_with_trailing_spaces() {
     let mut r = crate::StreamRepairer::new(Options::default());
     let parts = ["```json   \n", "{a:1}", "\n```\n"]; // one object
     let mut outs = Vec::new();
-    for p in parts.iter() { if let Some(s) = r.push(p).unwrap() { outs.push(s); } }
+    for p in parts.iter() {
+        if let Some(s) = r.push(p).unwrap() {
+            outs.push(s);
+        }
+    }
     assert_eq!(outs.len(), 1);
 }
 
@@ -77,8 +93,14 @@ fn st_trailing_jsonp_artifacts_after_objects() {
     let mut r = crate::StreamRepairer::new(Options::default());
     let parts = ["{a:1}\n)", ";\n"]; // ignore ) and ; at root
     let mut outs = Vec::new();
-    for p in parts.iter() { if let Some(s) = r.push(p).unwrap() { outs.push(s); } }
-    if let Some(tail) = r.flush().unwrap() { outs.push(tail); }
+    for p in parts.iter() {
+        if let Some(s) = r.push(p).unwrap() {
+            outs.push(s);
+        }
+    }
+    if let Some(tail) = r.flush().unwrap() {
+        outs.push(tail);
+    }
     assert_eq!(outs.len(), 1);
 }
 
@@ -97,7 +119,11 @@ fn st_nested_arrays_split() {
     let mut r = crate::StreamRepairer::new(Options::default());
     let parts = ["[", "[1,2]", ",3]", "\n"]; // one array
     let mut outs = Vec::new();
-    for p in parts.iter() { if let Some(s) = r.push(p).unwrap() { outs.push(s); } }
+    for p in parts.iter() {
+        if let Some(s) = r.push(p).unwrap() {
+            outs.push(s);
+        }
+    }
     assert_eq!(outs.len(), 1);
 }
 
@@ -126,8 +152,14 @@ fn st_ndjson_blank_and_comments_mixture_more() {
         "\n", "# a\n", "{x:1}\n", "// b\n\n", "{y:2}\n", "/*c*/\n", "{z:3}\n",
     ]; // 3 objects
     let mut outs = Vec::new();
-    for p in parts.iter() { if let Some(s) = r.push(p).unwrap() { outs.push(s); } }
-    if let Some(tail) = r.flush().unwrap() { outs.push(tail); }
+    for p in parts.iter() {
+        if let Some(s) = r.push(p).unwrap() {
+            outs.push(s);
+        }
+    }
+    if let Some(tail) = r.flush().unwrap() {
+        outs.push(tail);
+    }
     assert_eq!(outs.len(), 3);
 }
 
@@ -136,8 +168,14 @@ fn st_unicode_string_concat_across_chunks_more() {
     let mut r = crate::StreamRepairer::new(Options::default());
     let parts = ["\"你\"", "+", "\"好\"\n"]; // one string value
     let mut outs = Vec::new();
-    for p in parts.iter() { if let Some(s) = r.push(p).unwrap() { outs.push(s); } }
-    if let Some(tail) = r.flush().unwrap() { outs.push(tail); }
+    for p in parts.iter() {
+        if let Some(s) = r.push(p).unwrap() {
+            outs.push(s);
+        }
+    }
+    if let Some(tail) = r.flush().unwrap() {
+        outs.push(tail);
+    }
     assert_eq!(outs.len(), 1);
     let v: serde_json::Value = serde_json::from_str(&outs[0]).unwrap();
     assert_eq!(v, serde_json::json!("你好"));
@@ -149,8 +187,14 @@ fn st_regex_literal_split_with_flags() {
     // Embed regex into object for robust parsing
     let parts = ["{r:", "/a", "b+", "/i}", "\n"]; // emits one object
     let mut outs = Vec::new();
-    for p in parts.iter() { if let Some(s) = r.push(p).unwrap() { outs.push(s); } }
-    if let Some(tail) = r.flush().unwrap() { outs.push(tail); }
+    for p in parts.iter() {
+        if let Some(s) = r.push(p).unwrap() {
+            outs.push(s);
+        }
+    }
+    if let Some(tail) = r.flush().unwrap() {
+        outs.push(tail);
+    }
     assert_eq!(outs.len(), 1);
     let v: serde_json::Value = serde_json::from_str(&outs[0]).unwrap();
     let rstr = v.get("r").and_then(|x| x.as_str()).unwrap();
@@ -204,9 +248,15 @@ fn st_writer_basic_and_aggregate() {
 fn st_bom_ignored_before_value() {
     let mut r = crate::StreamRepairer::new(Options::default());
     let mut outs = Vec::new();
-    if let Some(s) = r.push("\u{FEFF}").unwrap() { outs.push(s); }
-    if let Some(s) = r.push("{a:1}\n").unwrap() { outs.push(s); }
-    if let Some(tail) = r.flush().unwrap() { outs.push(tail); }
+    if let Some(s) = r.push("\u{FEFF}").unwrap() {
+        outs.push(s);
+    }
+    if let Some(s) = r.push("{a:1}\n").unwrap() {
+        outs.push(s);
+    }
+    if let Some(tail) = r.flush().unwrap() {
+        outs.push(tail);
+    }
     let merged: String = outs.concat();
     let v: serde_json::Value = serde_json::from_str(&merged).unwrap();
     assert_eq!(v, serde_json::json!({"a":1}));

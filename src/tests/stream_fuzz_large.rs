@@ -23,8 +23,14 @@ fn large_streaming_vs_non_streaming_equivalence() {
     let sizes = super::lcg_sizes(314159, raw.chars().count());
     let parts = super::chunk_by_char(&raw, &sizes);
     let mut st = String::new();
-    for p in parts.iter() { if let Some(s) = r.push(p).unwrap() { st.push_str(&s); } }
-    if let Some(tail) = r.flush().unwrap() { st.push_str(&tail); }
+    for p in parts.iter() {
+        if let Some(s) = r.push(p).unwrap() {
+            st.push_str(&s);
+        }
+    }
+    if let Some(tail) = r.flush().unwrap() {
+        st.push_str(&tail);
+    }
     // Parse concatenated JSON texts into vectors for fair comparison
     fn parse_concat(s: &str) -> Vec<serde_json::Value> {
         let de = serde_json::Deserializer::from_str(s).into_iter::<serde_json::Value>();
@@ -58,8 +64,14 @@ fn large_ndjson_aggregate_streaming_vs_non_streaming() {
     let sizes = super::lcg_sizes(271828, raw.chars().count());
     let parts = super::chunk_by_char(&raw, &sizes);
     let mut st = String::new();
-    for p in parts.iter() { if let Some(s) = r.push(p).unwrap() { st.push_str(&s); } }
-    if let Some(tail) = r.flush().unwrap() { st.push_str(&tail); }
+    for p in parts.iter() {
+        if let Some(s) = r.push(p).unwrap() {
+            st.push_str(&s);
+        }
+    }
+    if let Some(tail) = r.flush().unwrap() {
+        st.push_str(&tail);
+    }
     let v: serde_json::Value = serde_json::from_str(&st).unwrap();
     assert_eq!(v.as_array().map(|a| a.len()), Some(20000));
 }

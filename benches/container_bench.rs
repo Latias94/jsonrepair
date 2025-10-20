@@ -72,7 +72,9 @@ fn gen_flat_object(n: usize) -> String {
     let mut s = String::with_capacity(n * 10);
     s.push('{');
     for i in 0..n {
-        if i > 0 { s.push(','); }
+        if i > 0 {
+            s.push(',');
+        }
         s.push('k');
         s.push_str(&i.to_string());
         s.push(':');
@@ -86,7 +88,9 @@ fn gen_array_dense(n: usize) -> String {
     let mut s = String::with_capacity(n * 3);
     s.push('[');
     for i in 0..n {
-        if i > 0 { s.push(','); }
+        if i > 0 {
+            s.push(',');
+        }
         s.push_str(&i.to_string());
     }
     s.push(']');
@@ -95,9 +99,14 @@ fn gen_array_dense(n: usize) -> String {
 
 fn gen_nested_object(depth: usize) -> String {
     let mut s = String::new();
-    for _ in 0..depth { s.push('{'); s.push_str("a:"); }
+    for _ in 0..depth {
+        s.push('{');
+        s.push_str("a:");
+    }
     s.push_str("{x:1}");
-    for _ in 0..depth { s.push('}'); }
+    for _ in 0..depth {
+        s.push('}');
+    }
     s
 }
 
@@ -141,17 +150,26 @@ fn container_bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("container_fast_paths");
     group.sampling_mode(SamplingMode::Flat);
     // Allow tuning sample size via env to avoid stalls when inputs are large
-    if let Some(ss) = env::var("JR_SAMPLE_SIZE").ok().and_then(|v| v.parse::<usize>().ok()) {
+    if let Some(ss) = env::var("JR_SAMPLE_SIZE")
+        .ok()
+        .and_then(|v| v.parse::<usize>().ok())
+    {
         group.sample_size(ss.max(1));
     } else {
         group.sample_size(10); // default lower sample size for large corpuses
     }
-    if let Some(meas) = env::var("JR_MEAS_SEC").ok().and_then(|v| v.parse::<u64>().ok()) {
+    if let Some(meas) = env::var("JR_MEAS_SEC")
+        .ok()
+        .and_then(|v| v.parse::<u64>().ok())
+    {
         group.measurement_time(Duration::from_secs(meas));
     } else {
         group.measurement_time(Duration::from_secs(6));
     }
-    if let Some(warm) = env::var("JR_WARMUP_SEC").ok().and_then(|v| v.parse::<u64>().ok()) {
+    if let Some(warm) = env::var("JR_WARMUP_SEC")
+        .ok()
+        .and_then(|v| v.parse::<u64>().ok())
+    {
         group.warm_up_time(Duration::from_secs(warm));
     } else {
         group.warm_up_time(Duration::from_secs(2));
@@ -277,22 +295,30 @@ fn container_bench(c: &mut Criterion) {
     // 4) String-heavy with Unicode and concat
     let input = scale_to_min_bytes(gen_strings_unicode(1_000));
     group.throughput(Throughput::Bytes(input.len() as u64));
-    group.bench_with_input(BenchmarkId::new("strings_unicode", 1_000), &input, |b, s| {
-        b.iter(|| {
-            let out = repair_to_string(s, &opts).unwrap();
-            std::hint::black_box(out);
-        })
-    });
+    group.bench_with_input(
+        BenchmarkId::new("strings_unicode", 1_000),
+        &input,
+        |b, s| {
+            b.iter(|| {
+                let out = repair_to_string(s, &opts).unwrap();
+                std::hint::black_box(out);
+            })
+        },
+    );
 
     // 5) Trailing commas
     let input = scale_to_min_bytes(gen_trailing_commas());
     group.throughput(Throughput::Bytes(input.len() as u64));
-    group.bench_with_input(BenchmarkId::new("trailing_commas", "fixed"), &input, |b, s| {
-        b.iter(|| {
-            let out = repair_to_string(s, &opts).unwrap();
-            std::hint::black_box(out);
-        })
-    });
+    group.bench_with_input(
+        BenchmarkId::new("trailing_commas", "fixed"),
+        &input,
+        |b, s| {
+            b.iter(|| {
+                let out = repair_to_string(s, &opts).unwrap();
+                std::hint::black_box(out);
+            })
+        },
+    );
 
     group.finish();
 }

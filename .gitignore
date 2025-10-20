@@ -1,6 +1,37 @@
+# Rust
 /target
 /target_bench_tmp
 /target_bench
-.vscode
-.idea
+Cargo.lock
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+*.whl
+
+# Benchmarks
 python_bench.json
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.log
+*~

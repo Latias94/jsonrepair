@@ -1,0 +1,24 @@
+[package]
+name = "jsonrepair-python"
+version = "0.1.0"
+edition = "2021"
+authors = ["Mingzhen Zhuang <superfrankie621@gmail.com>"]
+description = "Python bindings for jsonrepair - Fast JSON repair library"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/Latias94/jsonrepair"
+homepage = "https://github.com/Latias94/jsonrepair"
+
+[lib]
+name = "jsonrepair"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.26", features = ["extension-module"] }
+jsonrepair = { path = "..", features = ["serde", "logging"] }
+serde_json = "1"
+pythonize = "0.26"
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true

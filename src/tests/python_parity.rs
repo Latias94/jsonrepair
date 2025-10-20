@@ -104,8 +104,14 @@ fn jsonp_and_fenced_mixed() {
     let mut r = crate::StreamRepairer::new(Options::default());
     let parts = ["cb ", "( ```json\n", "{a: '你' + '好'}", "\n``` ) ;\n"];
     let mut outs = Vec::new();
-    for p in parts.iter() { if let Some(s) = r.push(p).unwrap() { outs.push(s); } }
-    if let Some(tail) = r.flush().unwrap() { outs.push(tail); }
+    for p in parts.iter() {
+        if let Some(s) = r.push(p).unwrap() {
+            outs.push(s);
+        }
+    }
+    if let Some(tail) = r.flush().unwrap() {
+        outs.push(tail);
+    }
     assert_eq!(outs.len(), 1);
     let v: serde_json::Value = serde_json::from_str(&outs[0]).unwrap();
     assert_eq!(v, serde_json::json!({"a":"你好"}));

@@ -1,8 +1,8 @@
 #![allow(clippy::collapsible_if)]
 #![allow(clippy::collapsible_else_if)]
 
-use crate::emit::{Emitter, JRResult};
 use super::lex::skip_ws_and_comments;
+use crate::emit::{Emitter, JRResult};
 
 /// Parse string literal with optional concatenations or embedded ident-quote form.
 /// 🚀 Optimized: use fast byte-level scanning to check for concatenation.
@@ -86,8 +86,18 @@ pub fn parse_string_literal_concat_fast<E: Emitter>(
         false
     };
 
+    // Heuristic: suspicious punctuation continuation right after a closing quote.
+    let has_punct = if !has_concat && !has_embed {
+        match look.chars().next() {
+            Some('?') | Some('!') | Some('<') | Some('>') | Some('/') | Some('.') => true,
+            _ => false,
+        }
+    } else {
+        false
+    };
+
     // 🚀 Fast path - no concatenation, parse once and emit
-    if !has_concat && !has_embed {
+    if !has_concat && !has_embed && !has_punct {
         let lit = parse_one_string_literal(input)?;
         return emit_json_string_from_lit(out, &lit, opts.ensure_ascii);
     }
@@ -121,10 +131,14 @@ fn finish_string_concat<E: Emitter>(
         let mut id_end = 0usize;
         for (i, ch) in sref.char_indices() {
             if i == 0 {
-                if !(ch.is_ascii_alphabetic() || ch == '_' || ch == '$') { break; }
+                if !(ch.is_ascii_alphabetic() || ch == '_' || ch == '$') {
+                    break;
+                }
                 id_end = i + ch.len_utf8();
             } else {
-                if !(ch.is_ascii_alphanumeric() || ch == '_' || ch == '$') { break; }
+                if !(ch.is_ascii_alphanumeric() || ch == '_' || ch == '$') {
+                    break;
+                }
                 id_end = i + ch.len_utf8();
             }
         }
@@ -142,12 +156,36 @@ fn finish_string_concat<E: Emitter>(
                     while idx < s2.len() {
                         let ch = s2[idx..].chars().next().unwrap();
                         let l = ch.len_utf8();
-                        if ch == q { *input = &s2[idx + l..]; break; }
+                        if ch == q {
+                            *input = &s2[idx + l..];
+                            break;
+                        }
                         acc.push(ch);
                         idx += l;
                     }
                     continue;
                 }
+            }
+        }
+        // Heuristic: punctuation-start continuation until the next quote.
+        // Handles cases like: "<h3>text"?</h3>" by interpreting the stray '"' as content.
+        if let Some(first) = sref.chars().next() {
+            if matches!(first, '?' | '!' | '<' | '>' | '/' | '.') {
+                // Reinsert a double-quote as content (will be escaped on emit)
+                acc.push('"');
+                let s2 = sref;
+                let mut idx = 0usize;
+                while idx < s2.len() {
+                    let ch = s2[idx..].chars().next().unwrap();
+                    let l = ch.len_utf8();
+                    if ch == '"' || ch == '\'' {
+                        *input = &s2[idx + l..];
+                        break;
+                    }
+                    acc.push(ch);
+                    idx += l;
+                }
+                continue;
             }
         }
         break;
@@ -196,7 +234,10 @@ pub fn parse_one_string_literal(input: &mut &str) -> JRResult<String> {
                                 i += 4;
                             } else if is_high {
                                 // Try to consume a following low surrogate
-                                if i + 6 <= s.len() && s[i + 4..].starts_with("\\u") && i + 10 <= s.len() {
+                                if i + 6 <= s.len()
+                                    && s[i + 4..].starts_with("\\u")
+                                    && i + 10 <= s.len()
+                                {
                                     let lo_hex = &s[i + 6..i + 10];
                                     if let Ok(lo) = u16::from_str_radix(lo_hex, 16) {
                                         if (0xDC00..=0xDFFF).contains(&lo) {
@@ -229,9 +270,27 @@ pub fn parse_one_string_literal(input: &mut &str) -> JRResult<String> {
             escape = true;
             continue;
         }
+        // Heuristic: handle doubled opening quote like ""value" by skipping the first extra
+        if ch == quote && out.is_empty() {
+            // lookahead to decide: if next is alphanumeric, treat this as stray; otherwise close
+            if let Some(nc) = s[i..].chars().next() {
+                if nc.is_alphanumeric() {
+                    continue;
+                }
+            }
+            // close empty string
+            *input = &s[i..];
+            return Ok(out);
+        }
         if ch == quote {
             // end
             *input = &s[i..];
+            return Ok(out);
+        }
+        // Heuristic: best-effort close on delimiters for unclosed strings inside containers
+        if ch == ']' || ch == '}' || ch == ',' {
+            // step back to let the container parser handle the delimiter
+            *input = &s[i - l..];
             return Ok(out);
         }
         out.push(ch);
@@ -257,8 +316,15 @@ pub fn parse_one_string_key_strict(input: &mut &str) -> JRResult<String> {
         let ch = s[i..].chars().next().unwrap();
         let l = ch.len_utf8();
         i += l;
-        if escape { escape = false; out.push(ch); continue; }
-        if ch == '\\' { escape = true; continue; }
+        if escape {
+            escape = false;
+            out.push(ch);
+            continue;
+        }
+        if ch == '\\' {
+            escape = true;
+            continue;
+        }
         if ch == quote {
             *input = &s[i..];
             return Ok(out);
@@ -269,7 +335,11 @@ pub fn parse_one_string_key_strict(input: &mut &str) -> JRResult<String> {
     Ok(out)
 }
 
-pub fn emit_json_string_from_lit<E: Emitter>(out: &mut E, s: &str, ensure_ascii: bool) -> JRResult<()> {
+pub fn emit_json_string_from_lit<E: Emitter>(
+    out: &mut E,
+    s: &str,
+    ensure_ascii: bool,
+) -> JRResult<()> {
     // Fast path: if ASCII-only and contains no characters requiring escaping, write as one slice.
     if s.is_ascii() {
         let bytes = s.as_bytes();
@@ -293,9 +363,10 @@ pub fn emit_json_string_from_lit<E: Emitter>(out: &mut E, s: &str, ensure_ascii:
     let mut start = 0usize; // start of current safe run
     for (i, ch) in s.char_indices() {
         let code = ch as u32;
-        let needs_escape =
-            ch == '"' || ch == '\\' || code <= 0x1F || (ensure_ascii && code > 0x7F);
-        if !needs_escape { continue; }
+        let needs_escape = ch == '"' || ch == '\\' || code <= 0x1F || (ensure_ascii && code > 0x7F);
+        if !needs_escape {
+            continue;
+        }
         // Flush safe run before this char
         if i > start {
             out.emit_str(&s[start..i])?;
@@ -334,5 +405,3 @@ pub fn emit_json_string_from_lit<E: Emitter>(out: &mut E, s: &str, ensure_ascii:
     }
     out.emit_char('"')
 }
-
-

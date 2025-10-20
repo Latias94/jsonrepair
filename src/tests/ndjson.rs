@@ -5,8 +5,14 @@ fn st_multiple_values_with_blank_and_comments() {
     let mut r = crate::StreamRepairer::new(Options::default());
     let parts = ["{a:1}\n", "# blank\n\n", "{b:2}\n", "// c\n", "{c:3}\n"];
     let mut outs = Vec::new();
-    for p in parts.iter() { if let Some(s) = r.push(p).unwrap() { outs.push(s); } }
-    if let Some(tail) = r.flush().unwrap() { outs.push(tail); }
+    for p in parts.iter() {
+        if let Some(s) = r.push(p).unwrap() {
+            outs.push(s);
+        }
+    }
+    if let Some(tail) = r.flush().unwrap() {
+        outs.push(tail);
+    }
     assert_eq!(outs.len(), 3);
 }
 
@@ -15,8 +21,14 @@ fn st_ndjson_objects_and_arrays_mixed() {
     let mut r = crate::StreamRepairer::new(Options::default());
     let parts = ["{a:1}\n", "[1,2]\n", "{b:2}\n"];
     let mut outs = Vec::new();
-    for p in parts.iter() { if let Some(s) = r.push(p).unwrap() { outs.push(s); } }
-    if let Some(tail) = r.flush().unwrap() { outs.push(tail); }
+    for p in parts.iter() {
+        if let Some(s) = r.push(p).unwrap() {
+            outs.push(s);
+        }
+    }
+    if let Some(tail) = r.flush().unwrap() {
+        outs.push(tail);
+    }
     assert_eq!(outs.len(), 3);
 }
 
@@ -25,8 +37,14 @@ fn st_ndjson_with_comments_and_blanks() {
     let mut r = crate::StreamRepairer::new(Options::default());
     let parts = ["{a:1}\n", "# x\n\n", "{b:2}\n", "// y\n", "{c:3}\n"]; // three objects
     let mut outs = Vec::new();
-    for p in parts.iter() { if let Some(s) = r.push(p).unwrap() { outs.push(s); } }
-    if let Some(tail) = r.flush().unwrap() { outs.push(tail); }
+    for p in parts.iter() {
+        if let Some(s) = r.push(p).unwrap() {
+            outs.push(s);
+        }
+    }
+    if let Some(tail) = r.flush().unwrap() {
+        outs.push(tail);
+    }
     assert_eq!(outs.len(), 3);
 }
 
@@ -44,7 +62,11 @@ fn st_ndjson_aggregate_mode_produces_single_array() {
     let sizes = super::lcg_sizes(24601, corpus.len());
     let parts = super::chunk_by_char(&corpus, &sizes);
     let mut outs = Vec::new();
-    for p in parts.iter() { if let Some(s) = r.push(p).unwrap() { outs.push(s); } }
+    for p in parts.iter() {
+        if let Some(s) = r.push(p).unwrap() {
+            outs.push(s);
+        }
+    }
     assert!(outs.is_empty());
     let ret = r.flush().unwrap().unwrap();
     let v: serde_json::Value = serde_json::from_str(&ret).unwrap();

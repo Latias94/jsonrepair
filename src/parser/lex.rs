@@ -26,7 +26,9 @@ pub fn skip_ws_and_comments(input: &mut &str, opts: &Options) {
         }
         *input = &s[i..];
 
-        if input.is_empty() { break; }
+        if input.is_empty() {
+            break;
+        }
 
         // Line comment: //
         if input.as_bytes().starts_with(b"//") {
@@ -91,10 +93,14 @@ pub fn take_ident(s: &str) -> (&str, &str) {
     let mut end = 0usize;
     for (i, ch) in s.char_indices() {
         if i == 0 {
-            if !(ch.is_ascii_alphabetic() || ch == '_' || ch == '$') { break; }
+            if !(ch.is_ascii_alphabetic() || ch == '_' || ch == '$') {
+                break;
+            }
             end = i + ch.len_utf8();
         } else {
-            if !(ch.is_ascii_alphanumeric() || ch == '_' || ch == '$') { break; }
+            if !(ch.is_ascii_alphanumeric() || ch == '_' || ch == '$') {
+                break;
+            }
             end = i + ch.len_utf8();
         }
     }
@@ -106,16 +112,21 @@ pub fn take_ident(s: &str) -> (&str, &str) {
 /// A slash '/' stops only if it starts a comment (// or /*).
 pub fn take_symbol_until_delim<'i>(input: &mut &'i str) -> &'i str {
     let s = *input;
-    if s.is_empty() { return s; }
+    if s.is_empty() {
+        return s;
+    }
     let b = s.as_bytes();
     let mut i = 0usize;
     while i < b.len() {
         match b[i] {
             // ASCII whitespace or structural delimiters terminate the token
-            b' ' | b'\t' | b'\n' | b'\r' | b',' | b'[' | b']' | b'{' | b'}' | b'(' | b')' | b':' | b'"' | b'\'' => break,
+            b' ' | b'\t' | b'\n' | b'\r' | b',' | b'[' | b']' | b'{' | b'}' | b'(' | b')'
+            | b':' | b'"' | b'\'' => break,
             b'/' => {
                 // Stop only if a comment starts
-                if i + 1 < b.len() && (b[i + 1] == b'/' || b[i + 1] == b'*') { break; }
+                if i + 1 < b.len() && (b[i + 1] == b'/' || b[i + 1] == b'*') {
+                    break;
+                }
                 i += 1;
             }
             _ => {
@@ -134,7 +145,9 @@ pub fn take_symbol_until_delim<'i>(input: &mut &'i str) -> &'i str {
 /// a direct prefix check for each marker. It avoids entering heavier paths
 /// when the first character cannot possibly match any marker.
 pub fn skip_word_markers(input: &mut &str, markers: &[String]) {
-    if markers.is_empty() { return; }
+    if markers.is_empty() {
+        return;
+    }
     loop {
         let before = *input;
         // Fast ASCII whitespace trim
@@ -142,7 +155,10 @@ pub fn skip_word_markers(input: &mut &str, markers: &[String]) {
         let bytes = s0.as_bytes();
         let mut i = 0usize;
         while i < bytes.len() {
-            match bytes[i] { b' ' | b'\t' | b'\n' | b'\r' => i += 1, _ => break }
+            match bytes[i] {
+                b' ' | b'\t' | b'\n' | b'\r' => i += 1,
+                _ => break,
+            }
         }
         *input = &s0[i..];
         let s1 = *input;
@@ -157,7 +173,10 @@ pub fn skip_word_markers(input: &mut &str, markers: &[String]) {
                 }
             }
         }
-        if !skipped { *input = before; break; }
+        if !skipped {
+            *input = before;
+            break;
+        }
     }
 }
 
@@ -178,19 +197,29 @@ pub fn jsonp_prefix_len(s: &str) -> Option<usize> {
     let mut idx = 0usize;
     let bytes = s.as_bytes();
     while idx < bytes.len() {
-        match bytes[idx] { b' ' | b'\t' | b'\n' | b'\r' => idx += 1, _ => break }
+        match bytes[idx] {
+            b' ' | b'\t' | b'\n' | b'\r' => idx += 1,
+            _ => break,
+        }
     }
     let after_ws = &s[idx..];
-    if !starts_with_ident(after_ws) { return None; }
+    if !starts_with_ident(after_ws) {
+        return None;
+    }
     let (_ident, rest) = take_ident(after_ws);
     let mut off = s.len() - rest.len();
     // Skip ASCII whitespace again
     while off < s.len() {
-        match s.as_bytes()[off] { b' ' | b'\t' | b'\n' | b'\r' => off += 1, _ => break }
+        match s.as_bytes()[off] {
+            b' ' | b'\t' | b'\n' | b'\r' => off += 1,
+            _ => break,
+        }
     }
     if off < s.len() && s.as_bytes()[off] == b'(' {
         Some(off + 1)
-    } else { None }
+    } else {
+        None
+    }
 }
 
 /// Compute how many bytes to consume after an opening fenced marker ```.
@@ -200,15 +229,26 @@ pub fn jsonp_prefix_len(s: &str) -> Option<usize> {
 pub fn fence_open_lang_newline_len(s: &str) -> usize {
     let bytes = s.as_bytes();
     let mut i = 0usize;
+    // skip any extra backticks beyond the initial opener ``` to tolerate fences like ````
+    while i < bytes.len() && bytes[i] == b'`' {
+        i += 1;
+    }
     // optional language token: [A-Za-z0-9_]+
     while i < bytes.len() {
         let b = bytes[i];
         let is_lang = b.is_ascii_alphanumeric() || b == b'_';
-        if is_lang { i += 1; } else { break; }
+        if is_lang {
+            i += 1;
+        } else {
+            break;
+        }
     }
     // optional spaces/tabs
     while i < bytes.len() {
-        match bytes[i] { b' ' | b'\t' => i += 1, _ => break }
+        match bytes[i] {
+            b' ' | b'\t' => i += 1,
+            _ => break,
+        }
     }
     // optional newline (\n or \r)
     if i < bytes.len() && (bytes[i] == b'\n' || bytes[i] == b'\r') {

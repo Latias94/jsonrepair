@@ -127,8 +127,14 @@ fn streaming_unicode_near_comment_markers() {
     let sizes = super::lcg_sizes(13579, input.chars().count());
     let parts = super::chunk_by_char(input, &sizes);
     let mut outs = Vec::new();
-    for p in parts.iter() { if let Some(s) = r.push(p).unwrap() { outs.push(s); } }
-    if let Some(tail) = r.flush().unwrap() { outs.push(tail); }
+    for p in parts.iter() {
+        if let Some(s) = r.push(p).unwrap() {
+            outs.push(s);
+        }
+    }
+    if let Some(tail) = r.flush().unwrap() {
+        outs.push(tail);
+    }
     assert_eq!(outs.len(), 1);
     let v: serde_json::Value = serde_json::from_str(&outs[0]).unwrap();
     assert_eq!(v, serde_json::json!({"a":"你","b":"好","c":3}));
@@ -189,8 +195,14 @@ fn streaming_concat_strings_and_regex_mixed() {
     let sizes = super::lcg_sizes(24680, input.chars().count());
     let parts = super::chunk_by_char(input, &sizes);
     let mut outs = Vec::new();
-    for p in parts.iter() { if let Some(s) = r.push(p).unwrap() { outs.push(s); } }
-    if let Some(tail) = r.flush().unwrap() { outs.push(tail); }
+    for p in parts.iter() {
+        if let Some(s) = r.push(p).unwrap() {
+            outs.push(s);
+        }
+    }
+    if let Some(tail) = r.flush().unwrap() {
+        outs.push(tail);
+    }
     assert_eq!(outs.len(), 2);
     let v1: serde_json::Value = serde_json::from_str(&outs[0]).unwrap();
     let v2: serde_json::Value = serde_json::from_str(&outs[1]).unwrap();

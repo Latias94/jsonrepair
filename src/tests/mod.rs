@@ -66,6 +66,7 @@ mod non_streaming_misc;
 mod numbers;
 mod numbers_more;
 mod objects_arrays;
+mod python_compat;
 mod python_parity;
 mod python_parity_deep;
 mod python_parity_fuzz;

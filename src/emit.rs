@@ -36,13 +36,16 @@ pub struct WriterEmitter<'a, W: Write> {
 
 impl<'a, W: Write> WriterEmitter<'a, W> {
     pub fn with_capacity(w: &'a mut W, cap: usize) -> Self {
-        Self { w, buf: Vec::with_capacity(cap) }
+        Self {
+            w,
+            buf: Vec::with_capacity(cap),
+        }
     }
     pub fn flush_all(&mut self) -> JRResult<()> {
         if !self.buf.is_empty() {
-            self.w
-                .write_all(&self.buf)
-                .map_err(|e| RepairError::new(RepairErrorKind::Parse(format!("io write error: {}", e)), 0))?;
+            self.w.write_all(&self.buf).map_err(|e| {
+                RepairError::new(RepairErrorKind::Parse(format!("io write error: {}", e)), 0)
+            })?;
             self.buf.clear();
         }
         Ok(())

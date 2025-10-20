@@ -4,7 +4,11 @@
 use crate::emit::{Emitter, JRResult};
 use crate::options::{LeadingZeroPolicy, Options};
 
-pub fn parse_number_token<E: Emitter>(input: &mut &str, opts: &Options, out: &mut E) -> JRResult<()> {
+pub fn parse_number_token<E: Emitter>(
+    input: &mut &str,
+    opts: &Options,
+    out: &mut E,
+) -> JRResult<()> {
     let s = *input;
     // JS non-finite special-case handled here as a robust fallback
     if opts.normalize_js_nonfinite && s.starts_with("-Infinity") {
@@ -18,14 +22,18 @@ pub fn parse_number_token<E: Emitter>(input: &mut &str, opts: &Options, out: &mu
         let ch = s[end_seg..].chars().next().unwrap();
         let l = ch.len_utf8();
         // Stop at common delimiters or whitespace
-        if ch.is_whitespace() || matches!(ch, ',' | '}' | ']' | ')' | '(' | ':') { break; }
+        if ch.is_whitespace() || matches!(ch, ',' | '}' | ']' | ')' | '(' | ':') {
+            break;
+        }
         // Stop if '/' starts a comment
         if ch == '/' {
             let p = end_seg + l;
             if p < s.len() {
                 let mut it = s[p..].chars();
                 if let Some(nc) = it.next() {
-                    if nc == '*' || nc == '/' { break; }
+                    if nc == '*' || nc == '/' {
+                        break;
+                    }
                 }
             }
         }
@@ -44,12 +52,16 @@ pub fn parse_number_token<E: Emitter>(input: &mut &str, opts: &Options, out: &mu
         match ch {
             '.' => dot_count += 1,
             'a'..='z' | 'A'..='Z' => {
-                if ch != 'e' && ch != 'E' { has_alpha_non_e = true; }
+                if ch != 'e' && ch != 'E' {
+                    has_alpha_non_e = true;
+                }
             }
             '/' => has_slash = true,
             '-' => {
                 if let Some(p) = prev {
-                    if p != 'e' && p != 'E' { hyphen_suspicious = true; }
+                    if p != 'e' && p != 'E' {
+                        hyphen_suspicious = true;
+                    }
                 }
             }
             _ => {}
@@ -66,7 +78,9 @@ pub fn parse_number_token<E: Emitter>(input: &mut &str, opts: &Options, out: &mu
     let mut started_with_dot = false;
     let mut ends_with_dot = false;
     // optional sign
-    if let Some('-') = s.chars().next() { i += 1; }
+    if let Some('-') = s.chars().next() {
+        i += 1;
+    }
     // integer or leading dot
     if i < s.len() {
         let ch = s[i..].chars().next().unwrap();
@@ -77,19 +91,33 @@ pub fn parse_number_token<E: Emitter>(input: &mut &str, opts: &Options, out: &mu
             let mut any = 0usize;
             while i < s.len() {
                 let c = s[i..].chars().next().unwrap();
-                if c.is_ascii_digit() { i += c.len_utf8(); any += 1; } else { break; }
+                if c.is_ascii_digit() {
+                    i += c.len_utf8();
+                    any += 1;
+                } else {
+                    break;
+                }
             }
             if any == 0 {
                 // no digits after ., fallback to string
                 *input = &s[end_seg..];
-                return crate::parser::strings::emit_json_string_from_lit(out, seg, opts.ensure_ascii);
+                return crate::parser::strings::emit_json_string_from_lit(
+                    out,
+                    seg,
+                    opts.ensure_ascii,
+                );
             }
         } else {
             // integer digits
             let mut _any = 0usize; // counter not used afterwards
             while i < s.len() {
                 let c = s[i..].chars().next().unwrap();
-                if c.is_ascii_digit() { i += c.len_utf8(); _any += 1; } else { break; }
+                if c.is_ascii_digit() {
+                    i += c.len_utf8();
+                    _any += 1;
+                } else {
+                    break;
+                }
             }
             // optional fraction
             if i < s.len() {
@@ -99,9 +127,16 @@ pub fn parse_number_token<E: Emitter>(input: &mut &str, opts: &Options, out: &mu
                     let mut anyf = 0usize;
                     while i < s.len() {
                         let c2 = s[i..].chars().next().unwrap();
-                        if c2.is_ascii_digit() { i += c2.len_utf8(); anyf += 1; } else { break; }
+                        if c2.is_ascii_digit() {
+                            i += c2.len_utf8();
+                            anyf += 1;
+                        } else {
+                            break;
+                        }
                     }
-                    if anyf == 0 { ends_with_dot = true; }
+                    if anyf == 0 {
+                        ends_with_dot = true;
+                    }
                 }
             }
         }
@@ -117,27 +152,40 @@ pub fn parse_number_token<E: Emitter>(input: &mut &str, opts: &Options, out: &mu
             // optional sign
             if i < s.len() {
                 let c2 = s[i..].chars().next().unwrap();
-                if c2 == '+' || c2 == '-' { i += c2.len_utf8(); }
+                if c2 == '+' || c2 == '-' {
+                    i += c2.len_utf8();
+                }
             }
             // digits
             let mut any = 0usize;
             while i < s.len() {
                 let c3 = s[i..].chars().next().unwrap();
-                if c3.is_ascii_digit() { i += c3.len_utf8(); any += 1; } else { break; }
+                if c3.is_ascii_digit() {
+                    i += c3.len_utf8();
+                    any += 1;
+                } else {
+                    break;
+                }
             }
             if any == 0 {
                 // invalid exponent -> drop exponent entirely (keep base)
                 advance_to = i; // advance past 'e' and optional sign
-                i = base_end;   // but keep token end at base
+                i = base_end; // but keep token end at base
                 exp_invalid = true;
             }
         }
     }
 
     // Now i is the end of valid numeric prefix within s; do not overrun segment end
-    if i > end_seg { i = end_seg; }
+    if i > end_seg {
+        i = end_seg;
+    }
     let tok = &s[..i];
-    let consumed_end = if exp_invalid && advance_to > i { advance_to } else { i };
+    let consumed_end = if exp_invalid && advance_to > i {
+        advance_to
+    } else {
+        i
+    };
     *input = &s[consumed_end..];
 
     if tok.is_empty() {
@@ -151,7 +199,11 @@ pub fn parse_number_token<E: Emitter>(input: &mut &str, opts: &Options, out: &mu
             match opts.leading_zero_policy {
                 LeadingZeroPolicy::KeepAsNumber => {}
                 LeadingZeroPolicy::QuoteAsString => {
-                    return crate::parser::strings::emit_json_string_from_lit(out, &tok, opts.ensure_ascii);
+                    return crate::parser::strings::emit_json_string_from_lit(
+                        out,
+                        &tok,
+                        opts.ensure_ascii,
+                    );
                 }
             }
         }

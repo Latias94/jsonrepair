@@ -7,11 +7,11 @@ fn test_repair_from_file() {
     let mut temp_file = NamedTempFile::new().unwrap();
     let broken_json = r#"{name: "John", age: 30}"#;
     temp_file.write_all(broken_json.as_bytes()).unwrap();
-    
+
     // 测试文件读取和修复
     let content = std::fs::read_to_string(temp_file.path()).unwrap();
     let fixed = repair_to_string(&content, &Options::default()).unwrap();
-    
+
     let v: serde_json::Value = serde_json::from_str(&fixed).unwrap();
     assert_eq!(v["name"], "John");
     assert_eq!(v["age"], 30);
@@ -30,10 +30,10 @@ fn test_repair_from_file_with_comments() {
     }
     "#;
     temp_file.write_all(broken_json.as_bytes()).unwrap();
-    
+
     let content = std::fs::read_to_string(temp_file.path()).unwrap();
     let fixed = repair_to_string(&content, &Options::default()).unwrap();
-    
+
     let v: serde_json::Value = serde_json::from_str(&fixed).unwrap();
     assert_eq!(v["name"], "Alice");
     assert_eq!(v["age"], 25);
@@ -45,10 +45,10 @@ fn test_repair_from_file_incomplete() {
     let mut temp_file = NamedTempFile::new().unwrap();
     let broken_json = r#"{"name": "Bob", "items": [1, 2, 3"#;
     temp_file.write_all(broken_json.as_bytes()).unwrap();
-    
+
     let content = std::fs::read_to_string(temp_file.path()).unwrap();
     let fixed = repair_to_string(&content, &Options::default()).unwrap();
-    
+
     let v: serde_json::Value = serde_json::from_str(&fixed).unwrap();
     assert_eq!(v["name"], "Bob");
     assert!(v["items"].is_array());
@@ -92,27 +92,23 @@ fn test_repair_from_file_unicode() {
 #[test]
 fn test_repair_from_file_large() {
     let mut temp_file = NamedTempFile::new().unwrap();
-    
+
     // 生成一个较大的 JSON 文件
     let mut broken_json = String::from("{users: [");
     for i in 0..100 {
         if i > 0 {
             broken_json.push_str(", ");
         }
-        broken_json.push_str(&format!(
-            "{{id: {}, name: 'User{}', active: true}}",
-            i, i
-        ));
+        broken_json.push_str(&format!("{{id: {}, name: 'User{}', active: true}}", i, i));
     }
     broken_json.push_str("]}");
-    
+
     temp_file.write_all(broken_json.as_bytes()).unwrap();
-    
+
     let content = std::fs::read_to_string(temp_file.path()).unwrap();
     let fixed = repair_to_string(&content, &Options::default()).unwrap();
-    
+
     let v: serde_json::Value = serde_json::from_str(&fixed).unwrap();
     assert!(v["users"].is_array());
     assert_eq!(v["users"].as_array().unwrap().len(), 100);
 }
-

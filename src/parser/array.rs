@@ -1,16 +1,23 @@
 #![allow(clippy::needless_lifetimes)]
 
+use super::lex::{skip_ellipsis, skip_word_markers, skip_ws_and_comments};
+use super::number::parse_number_token;
+use super::strings::parse_string_literal_concat_fast;
 use crate::emit::{Emitter, JRResult};
 use crate::options::Options;
-use super::lex::{skip_ws_and_comments, skip_word_markers, skip_ellipsis};
-use memchr::memchr2;
 use crate::parser::parse_regex_literal;
 use crate::parser::parse_symbol_or_unquoted_string;
-use super::strings::parse_string_literal_concat_fast;
-use super::number::parse_number_token;
+use memchr::memchr2;
 
-pub fn parse_array<'i, E: Emitter>(input: &mut &'i str, opts: &Options, out: &mut E, logger: &mut crate::parser::Logger) -> JRResult<()> {
-    if !input.starts_with('[') { return Ok(()); }
+pub fn parse_array<'i, E: Emitter>(
+    input: &mut &'i str,
+    opts: &Options,
+    out: &mut E,
+    logger: &mut crate::parser::Logger,
+) -> JRResult<()> {
+    if !input.starts_with('[') {
+        return Ok(());
+    }
     *input = &input[1..];
     out.emit_char('[')?;
     // Enter-array fast path: if only ASCII whitespace before a closing ']', close immediately.
@@ -28,38 +35,80 @@ pub fn parse_array<'i, E: Emitter>(input: &mut &'i str, opts: &Options, out: &mu
             out.emit_char(']')?;
             break;
         }
+        // If we see a closing '}' here, best-effort close the array and let outer object handle it
+        if input.starts_with('}') {
+            out.emit_char(']')?;
+            break;
+        }
         if input.starts_with(']') {
             *input = &input[1..];
             out.emit_char(']')?;
             break;
         }
-        if input.is_empty() { break; }
+        if input.is_empty() {
+            break;
+        }
         skip_word_markers(input, &opts.word_comment_markers);
-        while skip_ellipsis(input) { skip_ws_and_comments(input, opts); }
+        while skip_ellipsis(input) {
+            skip_ws_and_comments(input, opts);
+        }
         // optional comma between elements (fast path: ASCII ws -> ',' or ']')
         if let Some(delim) = fast_ws_to_comma_or_rbracket(input) {
             match delim {
                 ',' => { /* consumed comma, proceed to parse next element */ }
-                ']' => { out.emit_char(']')?; break; }
+                ']' => {
+                    out.emit_char(']')?;
+                    break;
+                }
                 _ => unreachable!(),
             }
         } else {
             // After top-of-loop skipper, simply consume a stray comma or close if present
-            if input.starts_with(',') { *input = &input[1..]; }
-            if input.starts_with(']') { *input = &input[1..]; out.emit_char(']')?; break; }
+            if input.starts_with(',') {
+                *input = &input[1..];
+            }
+            if input.starts_with(']') {
+                *input = &input[1..];
+                out.emit_char(']')?;
+                break;
+            }
+        }
+        // Look-ahead: if we see an immediately truncated object like "{]",
+        // drop the partial element and close the array (Python parity).
+        if input.starts_with('{') {
+            let mut look = &input[1..];
+            skip_ws_and_comments(&mut look, opts);
+            if look.starts_with(']') {
+                *input = &look[1..];
+                out.emit_char(']')?;
+                break 'outer;
+            }
         }
         // emit comma only when we are going to output an element
-        if !first { out.emit_char(',')?; }
+        if !first {
+            out.emit_char(',')?;
+        }
         first = false;
+        // Pre-trim whitespace and ellipsis placeholders before parsing element
+        skip_ws_and_comments(input, opts);
+        while skip_ellipsis(input) {
+            skip_ws_and_comments(input, opts);
+        }
         // Track array index for value path
         logger.push_index(idx);
+        if input.is_empty() {
+            out.emit_char(']')?;
+            break;
+        }
         let c = input.chars().next().unwrap();
         match c {
             '{' => super::object::parse_object(input, opts, out, logger)?,
             '[' => parse_array(input, opts, out, logger)?,
             '"' | '\'' => parse_string_literal_concat_fast(input, opts, out)?,
             '/' => parse_regex_literal(input, opts, out)?,
-            c if c == '-' || c == '.' || c.is_ascii_digit() => parse_number_token(input, opts, out)?,
+            c if c == '-' || c == '.' || c.is_ascii_digit() => {
+                parse_number_token(input, opts, out)?
+            }
             _ => parse_symbol_or_unquoted_string(input, opts, out, logger)?,
         }
         logger.pop_index();
@@ -67,14 +116,25 @@ pub fn parse_array<'i, E: Emitter>(input: &mut &'i str, opts: &Options, out: &mu
         // Fast path after element: ASCII ws -> next delimiter ',' or ']'
         if let Some(delim) = fast_ws_to_comma_or_rbracket(input) {
             match delim {
-                ',' => { continue 'outer; }
-                ']' => { out.emit_char(']')?; break 'outer; }
+                ',' => {
+                    continue 'outer;
+                }
+                ']' => {
+                    out.emit_char(']')?;
+                    break 'outer;
+                }
                 _ => unreachable!(),
             }
         } else {
             // Fallback: generic skipping and optional comma consumption
             skip_ws_and_comments(input, opts);
-            if input.starts_with(',') { *input = &input[1..]; }
+            if input.starts_with('}') {
+                out.emit_char(']')?;
+                break;
+            }
+            if input.starts_with(',') {
+                *input = &input[1..];
+            }
         }
     }
     Ok(())
@@ -83,16 +143,23 @@ pub fn parse_array<'i, E: Emitter>(input: &mut &'i str, opts: &Options, out: &mu
 #[inline]
 fn fast_ws_to_only_rbracket(input: &mut &str) -> Option<char> {
     let s = *input;
-    if s.is_empty() { return None; }
+    if s.is_empty() {
+        return None;
+    }
     let bytes = s.as_bytes();
     if let Some(pos) = memchr2(b',', b']', bytes) {
         // If we found a comma before ']', this isn't an immediate close; ignore.
-        if bytes[pos] == b',' { return None; }
+        if bytes[pos] == b',' {
+            return None;
+        }
         // Ensure all bytes before ']' are ASCII whitespace only.
         for &b in &bytes[..pos] {
-            match b { b' ' | b'\t' | b'\n' | b'\r' => {}, _ => return None }
+            match b {
+                b' ' | b'\t' | b'\n' | b'\r' => {}
+                _ => return None,
+            }
         }
-        *input = &s[pos+1..];
+        *input = &s[pos + 1..];
         Some(']')
     } else {
         None
@@ -101,16 +168,21 @@ fn fast_ws_to_only_rbracket(input: &mut &str) -> Option<char> {
 #[inline]
 fn fast_ws_to_comma_or_rbracket(input: &mut &str) -> Option<char> {
     let s = *input;
-    if s.is_empty() { return None; }
+    if s.is_empty() {
+        return None;
+    }
     let bytes = s.as_bytes();
     // Find next ',' or ']' quickly
     if let Some(pos) = memchr2(b',', b']', bytes) {
         // Ensure the prefix is only ASCII whitespace
         for &b in &bytes[..pos] {
-            match b { b' ' | b'\t' | b'\n' | b'\r' => {}, _ => return None }
+            match b {
+                b' ' | b'\t' | b'\n' | b'\r' => {}
+                _ => return None,
+            }
         }
         let delim = bytes[pos] as char;
-        *input = &s[pos+1..];
+        *input = &s[pos + 1..];
         Some(delim)
     } else {
         // No delimiter ahead; nothing to do

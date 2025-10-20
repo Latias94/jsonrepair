@@ -1,4 +1,6 @@
-use criterion::{BenchmarkId, Criterion, SamplingMode, Throughput, criterion_group, criterion_main};
+use criterion::{
+    BenchmarkId, Criterion, SamplingMode, Throughput, criterion_group, criterion_main,
+};
 use jsonrepair::{Options, repair_to_string};
 use std::env;
 use std::time::Duration;
@@ -28,9 +30,30 @@ fn valid_bench(c: &mut Criterion) {
     // Reuse the same group name so aggregator can merge keys uniformly
     let mut group = c.benchmark_group("container_fast_paths");
     group.sampling_mode(SamplingMode::Flat);
-    if let Some(ss) = env::var("JR_SAMPLE_SIZE").ok().and_then(|v| v.parse::<usize>().ok()) { group.sample_size(ss.max(1)); } else { group.sample_size(10); }
-    if let Some(meas) = env::var("JR_MEAS_SEC").ok().and_then(|v| v.parse::<u64>().ok()) { group.measurement_time(Duration::from_secs(meas)); } else { group.measurement_time(Duration::from_secs(6)); }
-    if let Some(warm) = env::var("JR_WARMUP_SEC").ok().and_then(|v| v.parse::<u64>().ok()) { group.warm_up_time(Duration::from_secs(warm)); } else { group.warm_up_time(Duration::from_secs(2)); }
+    if let Some(ss) = env::var("JR_SAMPLE_SIZE")
+        .ok()
+        .and_then(|v| v.parse::<usize>().ok())
+    {
+        group.sample_size(ss.max(1));
+    } else {
+        group.sample_size(10);
+    }
+    if let Some(meas) = env::var("JR_MEAS_SEC")
+        .ok()
+        .and_then(|v| v.parse::<u64>().ok())
+    {
+        group.measurement_time(Duration::from_secs(meas));
+    } else {
+        group.measurement_time(Duration::from_secs(6));
+    }
+    if let Some(warm) = env::var("JR_WARMUP_SEC")
+        .ok()
+        .and_then(|v| v.parse::<u64>().ok())
+    {
+        group.warm_up_time(Duration::from_secs(warm));
+    } else {
+        group.warm_up_time(Duration::from_secs(2));
+    }
 
     // valid JSON, ensure_ascii=false (pass-through)
     let opts = Options::default();
@@ -50,12 +73,16 @@ fn valid_bench(c: &mut Criterion) {
     };
     let input2 = input.clone();
     group.throughput(Throughput::Bytes(input2.len() as u64));
-    group.bench_with_input(BenchmarkId::new("valid_json_ensure_ascii", "fixed"), &input2, |b, s| {
-        b.iter(|| {
-            let out = repair_to_string(s, &opts_ascii).unwrap();
-            std::hint::black_box(out);
-        })
-    });
+    group.bench_with_input(
+        BenchmarkId::new("valid_json_ensure_ascii", "fixed"),
+        &input2,
+        |b, s| {
+            b.iter(|| {
+                let out = repair_to_string(s, &opts_ascii).unwrap();
+                std::hint::black_box(out);
+            })
+        },
+    );
 
     // valid JSON, fastpath (assume valid; skip serde validation)
     let opts_fast = Options {
@@ -64,12 +91,16 @@ fn valid_bench(c: &mut Criterion) {
     };
     let input3 = input.clone();
     group.throughput(Throughput::Bytes(input3.len() as u64));
-    group.bench_with_input(BenchmarkId::new("valid_json_fastpath", "fixed"), &input3, |b, s| {
-        b.iter(|| {
-            let out = repair_to_string(s, &opts_fast).unwrap();
-            std::hint::black_box(out);
-        })
-    });
+    group.bench_with_input(
+        BenchmarkId::new("valid_json_fastpath", "fixed"),
+        &input3,
+        |b, s| {
+            b.iter(|| {
+                let out = repair_to_string(s, &opts_fast).unwrap();
+                std::hint::black_box(out);
+            })
+        },
+    );
 
     group.finish();
 }

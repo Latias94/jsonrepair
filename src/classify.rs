@@ -16,4 +16,3 @@ pub fn is_double_quote_like(c: char) -> bool {
 pub fn is_single_quote_like(c: char) -> bool {
     matches!(c, '\u{27}' | '\u{2018}' | '\u{2019}' | '\u{60}' | '\u{B4}')
 }
-

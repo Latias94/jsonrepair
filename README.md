@@ -79,15 +79,55 @@ jsonrepair = "0.1"
 
 ## Quick Start
 
-### Non‑streaming
+### Basic repair (return string)
 
 ```rust
-use jsonrepair::{Options, repair_to_string};
+use jsonrepair::{repair_json, Options};
+
+let broken = "{name: 'John', age: 30,}";
+let repaired = repair_json(broken, &Options::default())?;
+// repaired = r#"{"name":"John","age":30}"#
+```
+
+Or use the original naming:
+
+```rust
+use jsonrepair::{repair_to_string, Options};
 
 let s = "{'a': 1, b: 'x', /*comment*/ c: /re+/ }";
 let out = repair_to_string(s, &Options::default())?;
 let v: serde_json::Value = serde_json::from_str(&out)?;
 assert_eq!(v["a"], 1);
+```
+
+### Parse to Value (like `json.loads()`)
+
+```rust
+use jsonrepair::{loads, Options};
+
+let broken = "{name: 'John', age: 30}";
+let value = loads(broken, &Options::default())?;
+assert_eq!(value["name"], "John");
+assert_eq!(value["age"], 30);
+```
+
+### Load from file
+
+```rust
+use jsonrepair::{from_file, Options};
+
+let value = from_file("broken.json", &Options::default())?;
+// value is a serde_json::Value
+```
+
+### Load from reader
+
+```rust
+use jsonrepair::{load, Options};
+use std::fs::File;
+
+let file = File::open("broken.json")?;
+let value = load(file, &Options::default())?;
 ```
 
 ### Streaming (chunked input)
@@ -118,14 +158,33 @@ repair_to_writer_streaming("{a:1, items: [1 /*c*/, 2, 3]}", &Options::default(),
 
 ## APIs (Library)
 
-- `repair_to_string(input: &str, opts: &Options) -> Result<String, RepairError>`
-- `repair_to_writer(input: &str, opts: &Options, writer: &mut impl Write)`
-- `repair_to_writer_streaming(input: &str, opts: &Options, writer: &mut impl Write)`
-- Streaming helper
-  - `StreamRepairer::new(opts: Options)`
-  - `push(&mut self, chunk: &str) -> Result<Option<String>, RepairError>`
-  - `flush(&mut self) -> Result<Option<String>, RepairError>`
-  - `push_to_writer/flush_to_writer` for incremental writes
+### Core API (String output)
+
+- `repair_json(input: &str, opts: &Options) -> Result<String, RepairError>` - **Recommended**: intuitive naming
+- `repair_to_string(input: &str, opts: &Options) -> Result<String, RepairError>` - Original naming
+
+### Parse to Value (requires `serde` feature)
+
+- `loads(input: &str, opts: &Options) -> Result<serde_json::Value, RepairError>` - **Recommended**: like `json.loads()`
+- `load(reader: impl Read, opts: &Options) -> Result<serde_json::Value, RepairError>` - Like `json.load()`
+- `from_file(path: impl AsRef<Path>, opts: &Options) -> Result<serde_json::Value, RepairError>` - Convenience for files
+- `repair_to_value(input: &str, opts: &Options) -> Result<serde_json::Value, RepairError>` - Original naming
+
+### Writer-based API
+
+- `repair_to_writer(input: &str, opts: &Options, writer: &mut impl Write)` - Write repaired JSON to writer
+- `repair_to_writer_streaming(input: &str, opts: &Options, writer: &mut impl Write)` - Streaming parse-while-write
+
+### Streaming API (chunked input)
+
+- `StreamRepairer::new(opts: Options)` - Create streaming repairer
+- `push(&mut self, chunk: &str) -> Result<Option<String>, RepairError>` - Push chunk, get output if ready
+- `flush(&mut self) -> Result<Option<String>, RepairError>` - Flush remaining data
+- `push_to_writer/flush_to_writer` - Writer-based variants
+
+### Logging API
+
+- `repair_to_string_with_log(input: &str, opts: &Options) -> Result<(String, Vec<RepairLogEntry>), RepairError>`
 
 ## CLI
 

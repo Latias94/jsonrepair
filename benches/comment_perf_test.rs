@@ -1,5 +1,5 @@
-use criterion::{criterion_group, criterion_main, Criterion, BenchmarkId, Throughput};
-use jsonrepair::{repair_to_string, Options};
+use criterion::{BenchmarkId, Criterion, Throughput, criterion_group, criterion_main};
+use jsonrepair::{Options, repair_to_string};
 use std::hint::black_box;
 
 fn gen_test_cases() -> Vec<(&'static str, String)> {
@@ -31,4 +31,3 @@ fn benchmark_comments(c: &mut Criterion) {
 
 criterion_group!(benches, benchmark_comments);
 criterion_main!(benches);
-

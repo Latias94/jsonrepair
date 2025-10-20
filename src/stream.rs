@@ -87,28 +87,32 @@ impl StreamRepairer {
     }
 
     // Add a value to writer aggregation
-    fn agg_add_val_writer<W: Write>(&mut self, writer: &mut W, val: &str) -> Result<(), RepairError> {
+    fn agg_add_val_writer<W: Write>(
+        &mut self,
+        writer: &mut W,
+        val: &str,
+    ) -> Result<(), RepairError> {
         if !self.agg_open {
             self.agg_open = true;
-            writer
-                .write_all(b"[")
-                .map_err(|e| RepairError::new(RepairErrorKind::Parse(format!("io write error: {}", e)), 0))?;
+            writer.write_all(b"[").map_err(|e| {
+                RepairError::new(RepairErrorKind::Parse(format!("io write error: {}", e)), 0)
+            })?;
         } else {
-            writer
-                .write_all(b", ")
-                .map_err(|e| RepairError::new(RepairErrorKind::Parse(format!("io write error: {}", e)), 0))?;
+            writer.write_all(b", ").map_err(|e| {
+                RepairError::new(RepairErrorKind::Parse(format!("io write error: {}", e)), 0)
+            })?;
         }
-        writer
-            .write_all(val.as_bytes())
-            .map_err(|e| RepairError::new(RepairErrorKind::Parse(format!("io write error: {}", e)), 0))
+        writer.write_all(val.as_bytes()).map_err(|e| {
+            RepairError::new(RepairErrorKind::Parse(format!("io write error: {}", e)), 0)
+        })
     }
 
     // Finish writer aggregation
     fn agg_finish_writer<W: Write>(&mut self, writer: &mut W) -> Result<(), RepairError> {
         if self.agg_open {
-            writer
-                .write_all(b"]")
-                .map_err(|e| RepairError::new(RepairErrorKind::Parse(format!("io write error: {}", e)), 0))?;
+            writer.write_all(b"]").map_err(|e| {
+                RepairError::new(RepairErrorKind::Parse(format!("io write error: {}", e)), 0)
+            })?;
             self.agg_open = false;
             self.agg_buf.clear();
         }
@@ -125,7 +129,12 @@ impl StreamRepairer {
         let mut i = self.scan_pos;
         while i < self.buf.len() {
             // Root-level helper: drop JSONP prefix like ident '(' (allow spaces)
-            if self.depth == 0 && !self.in_string && !self.in_line_comment && !self.in_block_comment && !self.in_fence {
+            if self.depth == 0
+                && !self.in_string
+                && !self.in_line_comment
+                && !self.in_block_comment
+                && !self.in_fence
+            {
                 if let Some(slice) = self.buf.get(self.seg_start..self.buf.len()) {
                     // Use lex helper to compute JSONP prefix length relative to current segment start
                     let rel = crate::parser::lex::jsonp_prefix_len(slice);
@@ -402,8 +411,14 @@ impl StreamRepairer {
                         };
                         // If the root-level segment is only an identifier (likely JSONP prefix), do not emit yet
                         let seg = &self.buf[self.seg_start..end].trim();
-                        let is_ident = seg.chars().next().map(|c| c.is_ascii_alphabetic() || c == '_' || c == '$').unwrap_or(false)
-                            && seg.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '$');
+                        let is_ident = seg
+                            .chars()
+                            .next()
+                            .map(|c| c.is_ascii_alphabetic() || c == '_' || c == '$')
+                            .unwrap_or(false)
+                            && seg
+                                .chars()
+                                .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '$');
                         if is_ident {
                             // drop the newline and keep buffer to await '('
                             self.scan_pos = i + len;
@@ -436,9 +451,12 @@ impl StreamRepairer {
             }
         }
         self.scan_pos = i;
-        if out.is_empty() { Ok(None) } else { Ok(Some(out)) }
+        if out.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(out))
+        }
     }
-
 
     /// Stream input chunk and write any completed repaired JSON values directly into `writer`.
     ///
@@ -453,7 +471,12 @@ impl StreamRepairer {
         let mut i = self.scan_pos;
         while i < self.buf.len() {
             // Grammar fast-path at root for writer: drop JSONP prefix via lex helper
-            if self.depth == 0 && !self.in_string && !self.in_line_comment && !self.in_block_comment && !self.in_fence {
+            if self.depth == 0
+                && !self.in_string
+                && !self.in_line_comment
+                && !self.in_block_comment
+                && !self.in_fence
+            {
                 if let Some(slice) = self.buf.get(self.seg_start..self.buf.len()) {
                     if let Some(rel) = crate::parser::lex::jsonp_prefix_len(slice) {
                         let abs = self.seg_start + rel;
@@ -800,13 +823,16 @@ impl StreamRepairer {
                 self.buf.clear();
                 self.seg_start = 0;
                 self.scan_pos = 0;
-                if self.opts.stream_ndjson_aggregate { self.agg_finish_writer(writer)?; }
+                if self.opts.stream_ndjson_aggregate {
+                    self.agg_finish_writer(writer)?;
+                }
                 return Ok(());
             }
             let s = self.buf[self.seg_start..].to_string();
             let fixed = repair_to_string(&s, &self.opts)?;
-            if self.opts.stream_ndjson_aggregate { self.agg_add_val_writer(writer, &fixed)?; }
-            else {
+            if self.opts.stream_ndjson_aggregate {
+                self.agg_add_val_writer(writer, &fixed)?;
+            } else {
                 writer.write_all(fixed.as_bytes()).map_err(|e| {
                     RepairError::new(RepairErrorKind::Parse(format!("io write error: {}", e)), 0)
                 })?;
@@ -822,7 +848,9 @@ impl StreamRepairer {
         self.in_block_comment = false;
         self.value_started = false;
         self.last_sig_end = 0;
-        if self.opts.stream_ndjson_aggregate { self.agg_finish_writer(writer)?; }
+        if self.opts.stream_ndjson_aggregate {
+            self.agg_finish_writer(writer)?;
+        }
         Ok(())
     }
 
@@ -844,8 +872,11 @@ impl StreamRepairer {
                 self.seg_start = 0;
                 self.scan_pos = 0;
                 // if aggregating and already opened, close and return aggregated array
-                if self.opts.stream_ndjson_aggregate { return Ok(self.agg_finish_str()); }
-                else { return Ok(if out.is_empty() { None } else { Some(out) }); }
+                if self.opts.stream_ndjson_aggregate {
+                    return Ok(self.agg_finish_str());
+                } else {
+                    return Ok(if out.is_empty() { None } else { Some(out) });
+                }
             }
             let s = self.buf[self.seg_start..].to_string();
             let fixed = repair_to_string(&s, &self.opts)?;
@@ -866,7 +897,11 @@ impl StreamRepairer {
         self.in_block_comment = false;
         self.value_started = false;
         self.last_sig_end = 0;
-        if self.opts.stream_ndjson_aggregate { Ok(self.agg_finish_str()) } else { Ok(if out.is_empty() { None } else { Some(out) }) }
+        if self.opts.stream_ndjson_aggregate {
+            Ok(self.agg_finish_str())
+        } else {
+            Ok(if out.is_empty() { None } else { Some(out) })
+        }
     }
 
     fn emit_segment(&mut self, end: usize) -> Result<String, RepairError> {
@@ -923,4 +958,3 @@ fn next_char(s: &str, i: usize) -> (char, usize) {
         None => ('\0', 0),
     }
 }
-

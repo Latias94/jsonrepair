@@ -1,7 +1,7 @@
-use criterion::{Criterion, Throughput, SamplingMode, criterion_group, criterion_main};
+use criterion::{Criterion, SamplingMode, Throughput, criterion_group, criterion_main};
+use jsonrepair::{Options, repair_to_writer_streaming};
 use std::env;
 use std::time::Duration;
-use jsonrepair::{Options, repair_to_writer_streaming};
 
 fn gen_large_object(n: usize) -> String {
     let mut s = String::from("{");
@@ -28,9 +28,30 @@ fn bench_writer(c: &mut Criterion) {
 
     let mut g = c.benchmark_group("writer_vs_string");
     g.sampling_mode(SamplingMode::Flat);
-    if let Some(ss) = env::var("JR_SAMPLE_SIZE").ok().and_then(|v| v.parse::<usize>().ok()) { g.sample_size(ss.max(1)); } else { g.sample_size(10); }
-    if let Some(meas) = env::var("JR_MEAS_SEC").ok().and_then(|v| v.parse::<u64>().ok()) { g.measurement_time(Duration::from_secs(meas)); } else { g.measurement_time(Duration::from_secs(6)); }
-    if let Some(warm) = env::var("JR_WARMUP_SEC").ok().and_then(|v| v.parse::<u64>().ok()) { g.warm_up_time(Duration::from_secs(warm)); } else { g.warm_up_time(Duration::from_secs(2)); }
+    if let Some(ss) = env::var("JR_SAMPLE_SIZE")
+        .ok()
+        .and_then(|v| v.parse::<usize>().ok())
+    {
+        g.sample_size(ss.max(1));
+    } else {
+        g.sample_size(10);
+    }
+    if let Some(meas) = env::var("JR_MEAS_SEC")
+        .ok()
+        .and_then(|v| v.parse::<u64>().ok())
+    {
+        g.measurement_time(Duration::from_secs(meas));
+    } else {
+        g.measurement_time(Duration::from_secs(6));
+    }
+    if let Some(warm) = env::var("JR_WARMUP_SEC")
+        .ok()
+        .and_then(|v| v.parse::<u64>().ok())
+    {
+        g.warm_up_time(Duration::from_secs(warm));
+    } else {
+        g.warm_up_time(Duration::from_secs(2));
+    }
     g.throughput(Throughput::Bytes(bytes));
 
     g.bench_function("to_string", |b| {
