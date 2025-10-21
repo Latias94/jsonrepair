@@ -13,12 +13,16 @@ else
         LIB_EXT := so
         EXE_EXT :=
         LIB_PATH_VAR := LD_LIBRARY_PATH
+        # Embed rpath so the tester finds ../target/release at runtime (no env needed)
+        RPATH_FLAG := -Wl,-rpath,'$$ORIGIN/../target/release'
     endif
     ifeq ($(UNAME_S),Darwin)
         DETECTED_OS := macOS
         LIB_EXT := dylib
         EXE_EXT :=
         LIB_PATH_VAR := DYLD_LIBRARY_PATH
+        # Embed rpath on macOS as well for robustness
+        RPATH_FLAG := -Wl,-rpath,@loader_path/../target/release
     endif
 endif
 
@@ -44,8 +48,8 @@ build-lib:
 	cd .. && cargo build --release --features c-api
 
 $(TEST_BINARY): c_api_test.c
-	@echo "Compiling C API tests..."
-	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
+    @echo "Compiling C API tests..."
+    $(CC) $(CFLAGS) -o $@ $< $(LDFLAGS) $(RPATH_FLAG)
 
 test: all
 	@echo "Running C API tests..."
@@ -69,4 +73,3 @@ help:
 	@echo "  clean      - Remove compiled tests"
 	@echo ""
 	@echo "Detected OS: $(DETECTED_OS)"
-
