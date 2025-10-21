@@ -48,8 +48,8 @@ build-lib:
 	cd .. && cargo build --release --features c-api
 
 $(TEST_BINARY): c_api_test.c
-    @echo "Compiling C API tests..."
-    $(CC) $(CFLAGS) -o $@ $< $(LDFLAGS) $(RPATH_FLAG)
+	@echo "Compiling C API tests..."
+	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS) $(RPATH_FLAG)
 
 test: all
 	@echo "Running C API tests..."
