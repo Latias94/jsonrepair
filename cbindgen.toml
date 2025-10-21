@@ -19,7 +19,7 @@ include = ["jsonrepair"]
 [fn]
 # Don't add prefix since our functions already have jsonrepair_ prefix
 prefix = ""
-rename_args = "GeckoCase"
+# rename_args = "GeckoCase"
 
 [struct]
 derive_eq = false

@@ -52,7 +52,7 @@ extern "C" {
  * - The returned string must be freed with `jsonrepair_free()`
  * - Returns NULL on error
  */
- char *jsonrepair_repair(const char *aInput);
+char *jsonrepair_repair(const char *input);
 
 /**
  * Free a string allocated by the library.
@@ -61,146 +61,146 @@ extern "C" {
  * - `str` must be a string returned by this library, or NULL
  * - Do not use `str` after calling this function
  */
- void jsonrepair_free(char *aStr);
+void jsonrepair_free(char *str);
 
 /**
  * Create a new options object with default values.
  *
  * Must be freed with `jsonrepair_options_free()`.
  */
- struct Options *jsonrepair_options_new(void);
+struct Options *jsonrepair_options_new(void);
 
 /**
  * Free an options object.
  *
  * # Safety
- * - `opts` must be a pointer returned by `jsonrepair_options_new()`, or NULL
+* - `opts` must be a pointer returned by `jsonrepair_options_new()`, or NULL
  * - Do not use `opts` after calling this function
  */
- void jsonrepair_options_free(struct Options *aOpts);
+void jsonrepair_options_free(struct Options *opts);
 
 /**
  * Set the ensure_ascii option.
  *
  * # Safety
- * - `opts` must be a valid pointer to Options
+* - `opts` must be a valid pointer to Options
  */
- void jsonrepair_options_set_ensure_ascii(struct Options *aOpts, bool aValue);
+void jsonrepair_options_set_ensure_ascii(struct Options *opts, bool value);
 
 /**
  * Set the allow_python_keywords option.
  *
  * # Safety
- * - `opts` must be a valid pointer to Options
+* - `opts` must be a valid pointer to Options
  */
- void jsonrepair_options_set_allow_python_keywords(struct Options *aOpts, bool aValue);
+void jsonrepair_options_set_allow_python_keywords(struct Options *opts, bool value);
 
 /**
  * Set the tolerate_hash_comments option.
  *
  * # Safety
- * - `opts` must be a valid pointer to Options
+* - `opts` must be a valid pointer to Options
  */
- void jsonrepair_options_set_tolerate_hash_comments(struct Options *aOpts, bool aValue);
+void jsonrepair_options_set_tolerate_hash_comments(struct Options *opts, bool value);
 
 /**
  * Set the repair_undefined option.
  *
  * # Safety
- * - `opts` must be a valid pointer to Options
+* - `opts` must be a valid pointer to Options
  */
- void jsonrepair_options_set_repair_undefined(struct Options *aOpts, bool aValue);
+void jsonrepair_options_set_repair_undefined(struct Options *opts, bool value);
 
 /**
  * Set the fenced_code_blocks option.
  *
  * # Safety
- * - `opts` must be a valid pointer to Options
+* - `opts` must be a valid pointer to Options
  */
- void jsonrepair_options_set_fenced_code_blocks(struct Options *aOpts, bool aValue);
+void jsonrepair_options_set_fenced_code_blocks(struct Options *opts, bool value);
 
 /**
  * Set the normalize_js_nonfinite option.
  *
  * # Safety
- * - `opts` must be a valid pointer to Options
+* - `opts` must be a valid pointer to Options
  */
- void jsonrepair_options_set_normalize_js_nonfinite(struct Options *aOpts, bool aValue);
+void jsonrepair_options_set_normalize_js_nonfinite(struct Options *opts, bool value);
 
 /**
  * Set the stream_ndjson_aggregate option.
  *
  * # Safety
- * - `opts` must be a valid pointer to Options
+* - `opts` must be a valid pointer to Options
  */
- void jsonrepair_options_set_stream_ndjson_aggregate(struct Options *aOpts, bool aValue);
+void jsonrepair_options_set_stream_ndjson_aggregate(struct Options *opts, bool value);
 
 /**
  * Set the logging option.
  *
  * # Safety
- * - `opts` must be a valid pointer to Options
+* - `opts` must be a valid pointer to Options
  */
- void jsonrepair_options_set_logging(struct Options *aOpts, bool aValue);
+void jsonrepair_options_set_logging(struct Options *opts, bool value);
 
 /**
  * Set the number_tolerance_leading_dot option.
  *
  * # Safety
- * - `opts` must be a valid pointer to Options
+* - `opts` must be a valid pointer to Options
  */
- void jsonrepair_options_set_number_tolerance_leading_dot(struct Options *aOpts, bool aValue);
+void jsonrepair_options_set_number_tolerance_leading_dot(struct Options *opts, bool value);
 
 /**
  * Set the number_tolerance_trailing_dot option.
  *
  * # Safety
- * - `opts` must be a valid pointer to Options
+* - `opts` must be a valid pointer to Options
  */
- void jsonrepair_options_set_number_tolerance_trailing_dot(struct Options *aOpts, bool aValue);
+void jsonrepair_options_set_number_tolerance_trailing_dot(struct Options *opts, bool value);
 
 /**
  * Set the python_style_separators option.
  *
  * # Safety
- * - `opts` must be a valid pointer to Options
+* - `opts` must be a valid pointer to Options
  */
- void jsonrepair_options_set_python_style_separators(struct Options *aOpts, bool aValue);
+void jsonrepair_options_set_python_style_separators(struct Options *opts, bool value);
 
 /**
  * Set the aggressive_truncation_fix option.
  *
  * # Safety
- * - `opts` must be a valid pointer to Options
+* - `opts` must be a valid pointer to Options
  */
- void jsonrepair_options_set_aggressive_truncation_fix(struct Options *aOpts, bool aValue);
+void jsonrepair_options_set_aggressive_truncation_fix(struct Options *opts, bool value);
 
 /**
  * Repair a JSON string with custom options.
  *
  * # Safety
  * - `input` must be a valid null-terminated UTF-8 string
- * - `opts` must be a valid pointer to Options, or NULL for defaults
+* - `opts` must be a valid pointer to Options, or NULL for defaults
  * - The returned string must be freed with `jsonrepair_free()`
  * - Returns NULL on error
  */
- char *jsonrepair_repair_with_options(const char *aInput, const struct Options *aOpts);
+char *jsonrepair_repair_with_options(const char *input, const struct Options *opts);
 
 /**
  * Repair a JSON string with error details.
  *
  * # Safety
  * - `input` must be a valid null-terminated UTF-8 string
- * - `opts` must be a valid pointer to Options, or NULL for defaults
+* - `opts` must be a valid pointer to Options, or NULL for defaults
  * - `error` can be NULL to ignore error details
  * - If `error` is not NULL and an error occurs, `error.message` must be freed with `free()`
  * - The returned string must be freed with `jsonrepair_free()`
  * - Returns NULL on error
  */
 
-char *jsonrepair_repair_ex(const char *aInput,
-                           const struct Options *aOpts,
-                           struct JsonRepairError *aError);
+char *jsonrepair_repair_ex(const char *input,
+                           const struct Options *opts,
+                           struct JsonRepairError *error);
 
 /**
  * Create a new streaming repairer.
@@ -209,63 +209,63 @@ char *jsonrepair_repair_ex(const char *aInput,
  * - `opts` can be NULL for default options
  * - Must be freed with `jsonrepair_stream_free()`
  */
- struct StreamRepairer *jsonrepair_stream_new(const struct Options *aOpts);
+struct StreamRepairer *jsonrepair_stream_new(const struct Options *opts);
 
 /**
  * Free a streaming repairer.
  *
  * # Safety
- * - `stream` must be a pointer returned by `jsonrepair_stream_new()`, or NULL
+* - `stream` must be a pointer returned by `jsonrepair_stream_new()`, or NULL
  */
- void jsonrepair_stream_free(struct StreamRepairer *aStream);
+void jsonrepair_stream_free(struct StreamRepairer *stream);
 
 /**
  * Push a chunk to the streaming repairer.
  *
  * # Safety
- * - `stream` must be a valid pointer to StreamRepairer
+* - `stream` must be a valid pointer to StreamRepairer
  * - `chunk` must be a valid null-terminated UTF-8 string
  * - Returns NULL if no complete value yet, or a string that must be freed with `jsonrepair_free()`
  */
- char *jsonrepair_stream_push(struct StreamRepairer *aStream, const char *aChunk);
+char *jsonrepair_stream_push(struct StreamRepairer *stream, const char *chunk);
 
 /**
  * Flush the streaming repairer.
  *
  * # Safety
- * - `stream` must be a valid pointer to StreamRepairer
+* - `stream` must be a valid pointer to StreamRepairer
  * - Returns NULL if no data, or a string that must be freed with `jsonrepair_free()`
  */
- char *jsonrepair_stream_flush(struct StreamRepairer *aStream);
+char *jsonrepair_stream_flush(struct StreamRepairer *stream);
 
 /**
  * Push a chunk with error handling.
  *
  * # Safety
- * - `stream` must be a valid pointer to StreamRepairer
+* - `stream` must be a valid pointer to StreamRepairer
  * - `chunk` must be a valid null-terminated UTF-8 string
  * - `error` can be NULL to ignore error details
  */
 
-char *jsonrepair_stream_push_ex(struct StreamRepairer *aStream,
-                                const char *aChunk,
-                                struct JsonRepairError *aError);
+char *jsonrepair_stream_push_ex(struct StreamRepairer *stream,
+                                const char *chunk,
+                                struct JsonRepairError *error);
 
 /**
  * Flush with error handling.
  *
  * # Safety
- * - `stream` must be a valid pointer to StreamRepairer
+* - `stream` must be a valid pointer to StreamRepairer
  * - `error` can be NULL to ignore error details
  */
- char *jsonrepair_stream_flush_ex(struct StreamRepairer *aStream, struct JsonRepairError *aError);
+char *jsonrepair_stream_flush_ex(struct StreamRepairer *stream, struct JsonRepairError *error);
 
 /**
  * Get the library version string.
  *
  * Returns a static string, do not free.
  */
- const char *jsonrepair_version(void);
+const char *jsonrepair_version(void);
 
 #ifdef __cplusplus
 }  // extern "C"
