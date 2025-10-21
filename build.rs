@@ -40,7 +40,8 @@ fn main() {
                 }
             })
             .collect::<Vec<_>>()
-            .join("\n");
+            .join("\n")
+            + "\n"; // Add final newline
         std::fs::write(&output_file, fixed_content).unwrap();
 
         println!("cargo:rerun-if-changed=src/ffi.rs");

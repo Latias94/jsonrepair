@@ -46,15 +46,9 @@ jobs:
         path: target
         key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
     
-    - name: Install cbindgen
-      run: cargo install cbindgen --version 0.27.0
-    
     - name: Build library with c-api feature
       run: cargo build --release --features c-api
-    
-    - name: Generate C header
-      run: cbindgen --config cbindgen.toml --crate jsonrepair --output include/jsonrepair.h
-    
+
     - name: Run Rust FFI tests
       run: cargo test --features c-api --test ffi_tests -- --nocapture
     
@@ -81,16 +75,10 @@ jobs:
       uses: dtolnay/rust-toolchain@master
       with:
         toolchain: ${{ matrix.rust }}
-    
-    - name: Install cbindgen
-      run: cargo install cbindgen --version 0.27.0
-    
+
     - name: Build library with c-api feature
       run: cargo build --release --features c-api
-    
-    - name: Generate C header
-      run: cbindgen --config cbindgen.toml --crate jsonrepair --output include/jsonrepair.h
-    
+
     - name: Install GCC (Ubuntu)
       if: matrix.os == 'ubuntu-latest'
       run: sudo apt-get update && sudo apt-get install -y gcc
@@ -120,16 +108,10 @@ jobs:
     
     - name: Install Rust
       uses: dtolnay/rust-toolchain@stable
-    
-    - name: Install cbindgen
-      run: cargo install cbindgen --version 0.27.0
-    
+
     - name: Build library with c-api feature
       run: cargo build --release --features c-api
-    
-    - name: Generate C header
-      run: cbindgen --config cbindgen.toml --crate jsonrepair --output include/jsonrepair.h
-    
+
     - name: Run Rust FFI tests
       run: cargo test --features c-api --test ffi_tests
     
@@ -178,19 +160,13 @@ jobs:
       uses: dtolnay/rust-toolchain@stable
       with:
         targets: ${{ matrix.target }}
-    
-    - name: Install cbindgen
-      run: cargo install cbindgen --version 0.27.0
-    
+
     - name: Install musl tools (Linux musl)
       if: matrix.target == 'x86_64-unknown-linux-musl'
       run: sudo apt-get update && sudo apt-get install -y musl-tools
-    
+
     - name: Build library
       run: cargo build --release --features c-api --target ${{ matrix.target }}
-    
-    - name: Generate C header
-      run: cbindgen --config cbindgen.toml --crate jsonrepair --output include/jsonrepair.h
     
     - name: Package library (Unix)
       if: runner.os != 'Windows'
