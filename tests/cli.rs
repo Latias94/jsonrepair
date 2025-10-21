@@ -4,8 +4,8 @@ use std::fs;
 use tempfile::tempdir;
 
 fn cargo_bin() -> &'static str {
-    // The main binary name matches the package: jsonrepair
-    "jsonrepair"
+    // The main binary is named jsonrepair-cli to avoid conflicts with the library
+    "jsonrepair-cli"
 }
 
 #[test]
