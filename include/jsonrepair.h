@@ -261,9 +261,9 @@ char *jsonrepair_stream_push_ex(struct StreamRepairer *stream,
 char *jsonrepair_stream_flush_ex(struct StreamRepairer *stream, struct JsonRepairError *error);
 
 /**
- * Get the library version string.
+ * Get the library version string (C API).
  *
- * Returns a static string, do not free.
+* Returns a process-static, read-only string pointer; callers must not free it.
  */
 const char *jsonrepair_version(void);
 

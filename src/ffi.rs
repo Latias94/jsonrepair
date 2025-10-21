@@ -655,10 +655,18 @@ pub unsafe extern "C" fn jsonrepair_stream_flush_ex(
 // Version Info
 // ============================================================================
 
-/// Get the library version string.
+/// Get the library version string (C API).
 ///
-/// Returns a static string, do not free.
+/// Returns a process-static, read-only string pointer; callers must not free it.
 #[unsafe(no_mangle)]
 pub extern "C" fn jsonrepair_version() -> *const c_char {
-    concat!(env!("CARGO_PKG_VERSION"), "\0").as_ptr() as *const c_char
+    // Use a static CStr so the pointer is stable and NUL-terminated.
+    // This approach is robust across platforms/optimizations, avoiding temporaries.
+    static VERSION: &std::ffi::CStr = {
+        // Ensure a trailing NUL via concat!, then construct a CStr constant.
+        const BYTES: &[u8] = concat!(env!("CARGO_PKG_VERSION"), "\0").as_bytes();
+        // SAFETY: BYTES ends with a NUL because of the explicit "\0" above.
+        unsafe { std::ffi::CStr::from_bytes_with_nul_unchecked(BYTES) }
+    };
+    VERSION.as_ptr()
 }
