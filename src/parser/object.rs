@@ -22,7 +22,7 @@ fn skip_line_comment_preserving_rbrace(input: &mut &str, opts: &Options) {
     }
     let s = *input;
     // Trim leading spaces/tabs only; keep newlines intact
-    let after_ws = s.trim_start_matches(|c| c == ' ' || c == '\t');
+    let after_ws = s.trim_start_matches([' ', '\t']);
     // If no comment marker immediately after spaces, return
     let bytes = after_ws.as_bytes();
     if bytes.starts_with(b"//") || (opts.tolerate_hash_comments && bytes.first() == Some(&b'#')) {

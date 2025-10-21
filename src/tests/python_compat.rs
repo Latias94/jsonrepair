@@ -203,8 +203,10 @@ fn test_trailing_dot_numbers() {
 #[test]
 fn test_ensure_ascii() {
     // Should escape non-ASCII characters when ensure_ascii is true
-    let mut opts = Options::default();
-    opts.ensure_ascii = true;
+    let opts = Options {
+        ensure_ascii: true,
+        ..Default::default()
+    };
     let input = r#"{'test_中国人_ascii':'统一码'}"#;
     let result = repair_to_string(input, &opts).unwrap();
     assert!(result.contains("\\u"), "Should contain Unicode escapes");

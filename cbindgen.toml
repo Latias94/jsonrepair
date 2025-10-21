@@ -27,7 +27,3 @@ derive_neq = false
 
 [enum]
 rename_variants = "ScreamingSnakeCase"
-
-[defines]
-"feature = c-api" = "JSONREPAIR_C_API"
-

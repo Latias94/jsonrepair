@@ -226,7 +226,7 @@ pub(crate) fn pre_trim_wrappers<'i>(input: &'i str, opts: &Options) -> &'i str {
             if let Some(end_rel) = s[body_start..].find("```") {
                 let after_end = body_start + end_rel + 3;
                 // If no additional fenced block occurs after the first closing, treat as a single fenced body
-                if s[after_end..].find("```").is_none() {
+                if !s[after_end..].contains("```") {
                     s = &s[body_start..body_start + end_rel];
                 }
             }
@@ -384,8 +384,7 @@ fn parse_root_many_string_fast<'i>(
     let mut extracted_to_first_struct = false;
     {
         let s0 = *input;
-        let first_non_ws =
-            s0.trim_start_matches(|c| c == ' ' || c == '\t' || c == '\n' || c == '\r');
+        let first_non_ws = s0.trim_start_matches([' ', '\t', '\n', '\r']);
         if !first_non_ws.is_empty() {
             let c0 = first_non_ws.chars().next().unwrap();
             if c0 != '{' && c0 != '[' {
@@ -609,7 +608,7 @@ pub(crate) fn parse_symbol_or_unquoted_string<'i, E: Emitter>(
                         break;
                     }
                     // Stop if a comment starts
-                    if nc == b'/' && input.as_bytes().len() >= 2 {
+                    if nc == b'/' && input.len() >= 2 {
                         let n2 = input.as_bytes()[1];
                         if n2 == b'/' || n2 == b'*' {
                             break;

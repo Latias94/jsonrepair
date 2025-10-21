@@ -78,8 +78,8 @@ pub fn parse_array<'i, E: Emitter>(
         if input.starts_with('{') {
             let mut look = &input[1..];
             skip_ws_and_comments(&mut look, opts);
-            if look.starts_with(']') {
-                *input = &look[1..];
+            if let Some(stripped) = look.strip_prefix(']') {
+                *input = stripped;
                 out.emit_char(']')?;
                 break 'outer;
             }

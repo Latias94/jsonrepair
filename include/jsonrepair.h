@@ -14,40 +14,23 @@
 namespace jsonrepair {
 #endif  // __cplusplus
 
-#if defined(JSONREPAIR_C_API)
 /**
  * Error codes for C API
  */
 typedef enum JsonRepairErrorCode {
-#if defined(JSONREPAIR_C_API)
   OK = 0,
-#endif
-#if defined(JSONREPAIR_C_API)
   UNEXPECTED_END = 1,
-#endif
-#if defined(JSONREPAIR_C_API)
   UNEXPECTED_CHAR = 2,
-#endif
-#if defined(JSONREPAIR_C_API)
   OBJECT_KEY_EXPECTED = 3,
-#endif
-#if defined(JSONREPAIR_C_API)
   COLON_EXPECTED = 4,
-#endif
-#if defined(JSONREPAIR_C_API)
   INVALID_UNICODE = 5,
-#endif
-#if defined(JSONREPAIR_C_API)
   PARSE = 6,
-#endif
 } JsonRepairErrorCode;
-#endif
 
 typedef struct Options Options;
 
 typedef struct StreamRepairer StreamRepairer;
 
-#if defined(JSONREPAIR_C_API)
 /**
  * Error structure for C API
  */
@@ -56,13 +39,11 @@ typedef struct JsonRepairError {
   char *message;
   uintptr_t position;
 } JsonRepairError;
-#endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
 
-#if defined(JSONREPAIR_C_API)
 /**
  * Repair a JSON string using default options.
  *
@@ -72,9 +53,7 @@ extern "C" {
  * - Returns NULL on error
  */
  char *jsonrepair_repair(const char *aInput);
-#endif
 
-#if defined(JSONREPAIR_C_API)
 /**
  * Free a string allocated by the library.
  *
@@ -83,18 +62,14 @@ extern "C" {
  * - Do not use `str` after calling this function
  */
  void jsonrepair_free(char *aStr);
-#endif
 
-#if defined(JSONREPAIR_C_API)
 /**
  * Create a new options object with default values.
  *
  * Must be freed with `jsonrepair_options_free()`.
  */
  struct Options *jsonrepair_options_new(void);
-#endif
 
-#if defined(JSONREPAIR_C_API)
 /**
  * Free an options object.
  *
@@ -103,9 +78,7 @@ extern "C" {
  * - Do not use `opts` after calling this function
  */
  void jsonrepair_options_free(struct Options *aOpts);
-#endif
 
-#if defined(JSONREPAIR_C_API)
 /**
  * Set the ensure_ascii option.
  *
@@ -113,9 +86,7 @@ extern "C" {
  * - `opts` must be a valid pointer to Options
  */
  void jsonrepair_options_set_ensure_ascii(struct Options *aOpts, bool aValue);
-#endif
 
-#if defined(JSONREPAIR_C_API)
 /**
  * Set the allow_python_keywords option.
  *
@@ -123,9 +94,7 @@ extern "C" {
  * - `opts` must be a valid pointer to Options
  */
  void jsonrepair_options_set_allow_python_keywords(struct Options *aOpts, bool aValue);
-#endif
 
-#if defined(JSONREPAIR_C_API)
 /**
  * Set the tolerate_hash_comments option.
  *
@@ -133,9 +102,7 @@ extern "C" {
  * - `opts` must be a valid pointer to Options
  */
  void jsonrepair_options_set_tolerate_hash_comments(struct Options *aOpts, bool aValue);
-#endif
 
-#if defined(JSONREPAIR_C_API)
 /**
  * Set the repair_undefined option.
  *
@@ -143,9 +110,7 @@ extern "C" {
  * - `opts` must be a valid pointer to Options
  */
  void jsonrepair_options_set_repair_undefined(struct Options *aOpts, bool aValue);
-#endif
 
-#if defined(JSONREPAIR_C_API)
 /**
  * Set the fenced_code_blocks option.
  *
@@ -153,9 +118,7 @@ extern "C" {
  * - `opts` must be a valid pointer to Options
  */
  void jsonrepair_options_set_fenced_code_blocks(struct Options *aOpts, bool aValue);
-#endif
 
-#if defined(JSONREPAIR_C_API)
 /**
  * Set the normalize_js_nonfinite option.
  *
@@ -163,9 +126,7 @@ extern "C" {
  * - `opts` must be a valid pointer to Options
  */
  void jsonrepair_options_set_normalize_js_nonfinite(struct Options *aOpts, bool aValue);
-#endif
 
-#if defined(JSONREPAIR_C_API)
 /**
  * Set the stream_ndjson_aggregate option.
  *
@@ -173,9 +134,7 @@ extern "C" {
  * - `opts` must be a valid pointer to Options
  */
  void jsonrepair_options_set_stream_ndjson_aggregate(struct Options *aOpts, bool aValue);
-#endif
 
-#if defined(JSONREPAIR_C_API)
 /**
  * Set the logging option.
  *
@@ -183,9 +142,7 @@ extern "C" {
  * - `opts` must be a valid pointer to Options
  */
  void jsonrepair_options_set_logging(struct Options *aOpts, bool aValue);
-#endif
 
-#if defined(JSONREPAIR_C_API)
 /**
  * Set the number_tolerance_leading_dot option.
  *
@@ -193,9 +150,7 @@ extern "C" {
  * - `opts` must be a valid pointer to Options
  */
  void jsonrepair_options_set_number_tolerance_leading_dot(struct Options *aOpts, bool aValue);
-#endif
 
-#if defined(JSONREPAIR_C_API)
 /**
  * Set the number_tolerance_trailing_dot option.
  *
@@ -203,9 +158,7 @@ extern "C" {
  * - `opts` must be a valid pointer to Options
  */
  void jsonrepair_options_set_number_tolerance_trailing_dot(struct Options *aOpts, bool aValue);
-#endif
 
-#if defined(JSONREPAIR_C_API)
 /**
  * Set the python_style_separators option.
  *
@@ -213,9 +166,7 @@ extern "C" {
  * - `opts` must be a valid pointer to Options
  */
  void jsonrepair_options_set_python_style_separators(struct Options *aOpts, bool aValue);
-#endif
 
-#if defined(JSONREPAIR_C_API)
 /**
  * Set the aggressive_truncation_fix option.
  *
@@ -223,9 +174,7 @@ extern "C" {
  * - `opts` must be a valid pointer to Options
  */
  void jsonrepair_options_set_aggressive_truncation_fix(struct Options *aOpts, bool aValue);
-#endif
 
-#if defined(JSONREPAIR_C_API)
 /**
  * Repair a JSON string with custom options.
  *
@@ -236,9 +185,7 @@ extern "C" {
  * - Returns NULL on error
  */
  char *jsonrepair_repair_with_options(const char *aInput, const struct Options *aOpts);
-#endif
 
-#if defined(JSONREPAIR_C_API)
 /**
  * Repair a JSON string with error details.
  *
@@ -254,9 +201,7 @@ extern "C" {
 char *jsonrepair_repair_ex(const char *aInput,
                            const struct Options *aOpts,
                            struct JsonRepairError *aError);
-#endif
 
-#if defined(JSONREPAIR_C_API)
 /**
  * Create a new streaming repairer.
  *
@@ -265,9 +210,7 @@ char *jsonrepair_repair_ex(const char *aInput,
  * - Must be freed with `jsonrepair_stream_free()`
  */
  struct StreamRepairer *jsonrepair_stream_new(const struct Options *aOpts);
-#endif
 
-#if defined(JSONREPAIR_C_API)
 /**
  * Free a streaming repairer.
  *
@@ -275,9 +218,7 @@ char *jsonrepair_repair_ex(const char *aInput,
  * - `stream` must be a pointer returned by `jsonrepair_stream_new()`, or NULL
  */
  void jsonrepair_stream_free(struct StreamRepairer *aStream);
-#endif
 
-#if defined(JSONREPAIR_C_API)
 /**
  * Push a chunk to the streaming repairer.
  *
@@ -287,9 +228,7 @@ char *jsonrepair_repair_ex(const char *aInput,
  * - Returns NULL if no complete value yet, or a string that must be freed with `jsonrepair_free()`
  */
  char *jsonrepair_stream_push(struct StreamRepairer *aStream, const char *aChunk);
-#endif
 
-#if defined(JSONREPAIR_C_API)
 /**
  * Flush the streaming repairer.
  *
@@ -298,9 +237,7 @@ char *jsonrepair_repair_ex(const char *aInput,
  * - Returns NULL if no data, or a string that must be freed with `jsonrepair_free()`
  */
  char *jsonrepair_stream_flush(struct StreamRepairer *aStream);
-#endif
 
-#if defined(JSONREPAIR_C_API)
 /**
  * Push a chunk with error handling.
  *
@@ -313,9 +250,7 @@ char *jsonrepair_repair_ex(const char *aInput,
 char *jsonrepair_stream_push_ex(struct StreamRepairer *aStream,
                                 const char *aChunk,
                                 struct JsonRepairError *aError);
-#endif
 
-#if defined(JSONREPAIR_C_API)
 /**
  * Flush with error handling.
  *
@@ -324,16 +259,13 @@ char *jsonrepair_stream_push_ex(struct StreamRepairer *aStream,
  * - `error` can be NULL to ignore error details
  */
  char *jsonrepair_stream_flush_ex(struct StreamRepairer *aStream, struct JsonRepairError *aError);
-#endif
 
-#if defined(JSONREPAIR_C_API)
 /**
  * Get the library version string.
  *
  * Returns a static string, do not free.
  */
  const char *jsonrepair_version(void);
-#endif
 
 #ifdef __cplusplus
 }  // extern "C"

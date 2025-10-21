@@ -88,10 +88,10 @@ pub fn parse_string_literal_concat_fast<E: Emitter>(
 
     // Heuristic: suspicious punctuation continuation right after a closing quote.
     let has_punct = if !has_concat && !has_embed {
-        match look.chars().next() {
-            Some('?') | Some('!') | Some('<') | Some('>') | Some('/') | Some('.') => true,
-            _ => false,
-        }
+        matches!(
+            look.chars().next(),
+            Some('?') | Some('!') | Some('<') | Some('>') | Some('/') | Some('.')
+        )
     } else {
         false
     };
