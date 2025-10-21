@@ -11,11 +11,16 @@ documentation = "https://docs.rs/jsonrepair"
 readme = "README.md"
 keywords = ["json", "repair", "streaming", "ndjson", "jsonp"]
 categories = ["parsing", "command-line-utilities"]
-exclude = [
-  ".github/*",
-  "scripts/*",
-  "docs/*",
-  "benches/*",
+include = [
+  "src/**",
+  "include/**",
+  "/README.md",
+  "/CHANGELOG.md",
+  "/LICENSE-APACHE",
+  "/LICENSE-MIT",
+  "/Cargo.toml",
+  "/build.rs",
+  "/cbindgen.toml",
 ]
 
 [lib]

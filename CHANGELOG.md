@@ -1,6 +1,6 @@
 ## [Unreleased]
 
-## [0.1.0] - TBD
+## [0.1.0] - 2025-10-21
 
 Initial release. A pragmatic, fast, and low-dependency JSON repair utility for Rust with multi-language bindings.
 
