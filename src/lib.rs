@@ -7,6 +7,9 @@ mod parser;
 mod repair;
 pub mod stream;
 
+#[cfg(feature = "c-api")]
+pub mod ffi;
+
 pub use error::{RepairError, RepairErrorKind};
 pub use options::{LeadingZeroPolicy, Options};
 pub use repair::RepairLogEntry;
@@ -82,7 +85,7 @@ pub fn repair_to_writer<W: Write>(
     let s = repair::repair_to_string(input, opts)?;
     writer
         .write_all(s.as_bytes())
-        .map_err(|e| RepairError::from_serde("write", serde_json::Error::io(e)))
+        .map_err(|e| RepairError::new(RepairErrorKind::Parse(format!("write error: {}", e)), 0))
 }
 
 /// Repair a potentially invalid JSON string and stream the output into a writer while parsing.

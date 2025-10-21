@@ -1,76 +1,21 @@
-jsonrepair (Rust)
-=================
+# jsonrepair
 
 [![Crates.io](https://img.shields.io/crates/v/jsonrepair.svg)](https://crates.io/crates/jsonrepair)
 [![Documentation](https://docs.rs/jsonrepair/badge.svg)](https://docs.rs/jsonrepair)
 [![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE)
 
-Fast, low‑dependency JSON repair for Rust. Turn “almost JSON” into valid JSON safely, with non‑streaming, streaming, and writer‑oriented APIs.
+A fast, low-dependency JSON repair library for Rust. Fixes malformed JSON commonly produced by LLMs and other sources.
 
-## Overview
+## Features
 
-- **Minimal deps**: `memchr` + `thiserror` (+ optional `serde`/`serde_json`). No heavy parser frameworks.
-- **Zero-copy architecture**: Hand-written recursive descent parser using `&str` slicing for memory efficiency.
-- **Performance-focused**: `memchr` fast paths in syntax-safe states, ASCII fast path, careful byte→char mapping.
-- **Robust streaming**: Multi-chunk stability, NDJSON aggregation, tolerant JSONP/fenced wrapping.
-- **Ergonomic writer API**: Produce output while parsing to reduce peak memory.
+- **Non-streaming API**: Simple string-to-string repair
+- **Streaming API**: Process large files or chunked input with low memory usage
+- **Writer API**: Stream output while parsing to minimize memory overhead
+- **Parse to Value**: Direct conversion to `serde_json::Value` (like Python's `json.loads()`)
+- **CLI tool**: Command-line interface (`jsonrepair` / `jr`)
+- **Language bindings**: Python (PyO3), C API for C/C++/Go/Java/C#/Node.js/etc.
 
-## Architecture & Performance Characteristics
-
-This library uses a **hand-written recursive descent parser** with `&str` slicing (zero-copy approach), not parser combinators. This architectural choice has specific performance trade-offs:
-
-### ✅ Our Strengths (1.5-3.4x faster than alternatives)
-
-- **Medium to large JSON** (1KB - 1MB): API responses, database exports, config files
-- **Large flat objects** (10000+ keys): i18n translations, feature dictionaries
-- **Dense arrays** (100000+ elements): Time series, sensor data, batch processing
-- **Large files** (>100KB): Log files, data backups, migrations
-- **Memory-constrained environments**: Zero-copy means 4x less memory usage vs character-array approaches
-
-**Why we're faster here**: Zero-copy architecture shines with larger data where memory efficiency and cache locality matter most.
-
-### ⚠️ Where Alternatives May Be Faster
-
-- **NDJSON / line-delimited logs**: Frequent small-object parsing favors indexed character arrays
-- **Heavy comment scenarios**: Many comment-skipping operations have higher per-call overhead with string slicing
-- **Tiny objects** (<100 bytes): Fixed overhead of string slicing is relatively larger
-- **Real-time streaming** (small chunks): Indexed access patterns can have lower latency
-
-**Why**: Our `&str` slicing requires UTF-8 boundary validation (10-20 CPU cycles per operation) vs O(1) indexed access (1-2 cycles). This trade-off favors larger data where zero-copy benefits dominate.
-
-### 🎯 Recommendation
-
-**Use jsonrepair if you're processing**:
-- Web API responses (typically 1-100KB)
-- Database query results
-- Configuration files
-- Batch data processing
-- Large file parsing
-
-**Consider [llm_json](https://github.com/anysphere/llm_json) if you're processing**:
-- NDJSON / log streams (many small objects per line)
-- Real-time message streams (WebSocket, IoT)
-- Heavily commented JSON (LLM outputs with explanations)
-- Tiny JSON snippets (<100 bytes)
-
-Both libraries are excellent—choose based on your data size and access patterns. See [docs/scenario_recommendations.md](docs/scenario_recommendations.md) for detailed benchmarks and use-case analysis.
-
-## Repairs Covered
-
-- Comments: `//`, `/* ... */`, and optional `#`.
-- Unquoted keys/strings; single quotes → double quotes; smart quotes → `"`.
-- Missing commas/colons; unclosed brackets/braces; extra/trailing closers.
-- Fenced code blocks: ```json ... ``` and plain ``` ... ``` wrappers.
-- JSONP wrappers: `name(...)` and tolerant `name ( ... )`.
-- String concatenation: `"a" + "b"`.
-- Regex literals: `/re+/` → JSON string.
-- Keywords: Python `True`/`False`/`None` → `true`/`false`/`null`; `undefined` → `null`.
-- Leading zeros policy: keep number or quote as string.
-- NDJSON: multiple values → JSON array (non‑streaming) or aggregate on flush (streaming).
-
-## Install
-
-Add to `Cargo.toml`:
+## Installation
 
 ```toml
 [dependencies]
@@ -79,232 +24,251 @@ jsonrepair = "0.1"
 
 ## Quick Start
 
-### Basic repair (return string)
+### Basic Repair
 
 ```rust
 use jsonrepair::{repair_json, Options};
 
 let broken = "{name: 'John', age: 30,}";
-let repaired = repair_json(broken, &Options::default())?;
-// repaired = r#"{"name":"John","age":30}"#
+let fixed = repair_json(broken, &Options::default())?;
+// Result: {"name":"John","age":30}
 ```
 
-Or use the original naming:
+### Parse to Value
 
 ```rust
-use jsonrepair::{repair_to_string, Options};
+use jsonrepair::loads;
 
-let s = "{'a': 1, b: 'x', /*comment*/ c: /re+/ }";
-let out = repair_to_string(s, &Options::default())?;
-let v: serde_json::Value = serde_json::from_str(&out)?;
-assert_eq!(v["a"], 1);
+let value = loads("{a: 1, b: 'hello'}", &Options::default())?;
+assert_eq!(value["a"], 1);
 ```
 
-### Parse to Value (like `json.loads()`)
+### Streaming (Large Files)
 
 ```rust
-use jsonrepair::{loads, Options};
+use jsonrepair::StreamRepairer;
 
-let broken = "{name: 'John', age: 30}";
-let value = loads(broken, &Options::default())?;
-assert_eq!(value["name"], "John");
-assert_eq!(value["age"], 30);
+let mut repairer = StreamRepairer::new(Options::default());
+for chunk in chunks {
+    if let Some(output) = repairer.push(chunk)? {
+        // Process output
+    }
+}
+if let Some(final_output) = repairer.flush()? {
+    // Process final output
+}
 ```
 
-### Load from file
+### Load from File
 
 ```rust
-use jsonrepair::{from_file, Options};
+use jsonrepair::from_file;
 
 let value = from_file("broken.json", &Options::default())?;
-// value is a serde_json::Value
 ```
 
-### Load from reader
+## What It Fixes
+
+- **Comments**: `//`, `/* ... */`, `#` (optional)
+- **Quotes**: Single quotes → double quotes, unquoted keys/strings
+- **Punctuation**: Missing commas/colons, trailing commas, unclosed brackets
+- **Wrappers**: Fenced code blocks (```json ... ```), JSONP (`callback(...)`)
+- **String concatenation**: `"a" + "b"` → `"ab"`
+- **Regex literals**: `/pattern/` → `"/pattern/"`
+- **Keywords**: Python `True`/`False`/`None`, JavaScript `undefined`
+- **Numbers**: `NaN`/`Infinity` → `null`, leading zeros handling
+- **NDJSON**: Multiple values → array (optional aggregation)
+
+## API Reference
+
+### Non-Streaming
 
 ```rust
-use jsonrepair::{load, Options};
-use std::fs::File;
+// Repair to string
+repair_json(input: &str, opts: &Options) -> Result<String>
 
-let file = File::open("broken.json")?;
-let value = load(file, &Options::default())?;
+// Parse to Value (requires 'serde' feature)
+loads(input: &str, opts: &Options) -> Result<serde_json::Value>
+load(reader: impl Read, opts: &Options) -> Result<serde_json::Value>
+from_file(path: impl AsRef<Path>, opts: &Options) -> Result<serde_json::Value>
+
+// Write to writer
+repair_to_writer(input: &str, opts: &Options, writer: &mut impl Write)
 ```
 
-### Streaming (chunked input)
+### Streaming
 
 ```rust
-use jsonrepair::{Options, StreamRepairer};
+let mut repairer = StreamRepairer::new(opts);
+repairer.push(chunk: &str) -> Result<Option<String>>
+repairer.flush() -> Result<Option<String>>
 
-let mut r = StreamRepairer::new(Options::default());
-let mut outs = Vec::new();
-for chunk in ["callback(", "```json\n", "{a:1}", "\n```", ");\n"].iter() {
-    if let Some(s) = r.push(chunk)? { outs.push(s); }
+// Writer variants
+repairer.push_to_writer(chunk: &str, writer: &mut impl Write)
+repairer.flush_to_writer(writer: &mut impl Write)
+```
+
+### Options
+
+```rust
+Options {
+    tolerate_hash_comments: bool,        // Allow # comments (default: true)
+    repair_undefined: bool,              // undefined → null (default: true)
+    allow_python_keywords: bool,         // True/False/None (default: true)
+    normalize_js_nonfinite: bool,        // NaN/Infinity → null (default: true)
+    fenced_code_blocks: bool,            // Strip ``` fences (default: true)
+    stream_ndjson_aggregate: bool,       // Aggregate NDJSON (default: false)
+    leading_zero_policy: LeadingZeroPolicy, // KeepAsNumber | QuoteAsString
+    ensure_ascii: bool,                  // Escape non-ASCII (default: false)
+    logging: bool,                       // Enable repair log (default: false)
+    // ... more options in docs
 }
-if let Some(tail) = r.flush()? { outs.push(tail); }
-assert_eq!(outs.len(), 1);
-assert_eq!(serde_json::from_str::<serde_json::Value>(&outs[0])?, serde_json::json!({"a":1}));
 ```
 
-### Streaming writer (parse‑while‑write)
+## CLI Usage
 
-```rust
-use jsonrepair::{Options, repair_to_writer_streaming};
-use std::fs::File;
-use std::io::BufWriter;
-
-let mut f = BufWriter::new(File::create("out.json")?);
-repair_to_writer_streaming("{a:1, items: [1 /*c*/, 2, 3]}", &Options::default(), &mut f)?;
-```
-
-## APIs (Library)
-
-### Core API (String output)
-
-- `repair_json(input: &str, opts: &Options) -> Result<String, RepairError>` - **Recommended**: intuitive naming
-- `repair_to_string(input: &str, opts: &Options) -> Result<String, RepairError>` - Original naming
-
-### Parse to Value (requires `serde` feature)
-
-- `loads(input: &str, opts: &Options) -> Result<serde_json::Value, RepairError>` - **Recommended**: like `json.loads()`
-- `load(reader: impl Read, opts: &Options) -> Result<serde_json::Value, RepairError>` - Like `json.load()`
-- `from_file(path: impl AsRef<Path>, opts: &Options) -> Result<serde_json::Value, RepairError>` - Convenience for files
-- `repair_to_value(input: &str, opts: &Options) -> Result<serde_json::Value, RepairError>` - Original naming
-
-### Writer-based API
-
-- `repair_to_writer(input: &str, opts: &Options, writer: &mut impl Write)` - Write repaired JSON to writer
-- `repair_to_writer_streaming(input: &str, opts: &Options, writer: &mut impl Write)` - Streaming parse-while-write
-
-### Streaming API (chunked input)
-
-- `StreamRepairer::new(opts: Options)` - Create streaming repairer
-- `push(&mut self, chunk: &str) -> Result<Option<String>, RepairError>` - Push chunk, get output if ready
-- `flush(&mut self) -> Result<Option<String>, RepairError>` - Flush remaining data
-- `push_to_writer/flush_to_writer` - Writer-based variants
-
-### Logging API
-
-- `repair_to_string_with_log(input: &str, opts: &Options) -> Result<(String, Vec<RepairLogEntry>), RepairError>`
-
-## CLI
-
-### Install
-
-- Local: `cargo install --path .`
-- crates.io: `cargo install jsonrepair`
-
-### Usage (alias: `jr`)
-
+Install:
 ```bash
-jsonrepair [OPTIONS] [INPUT]
+cargo install jsonrepair
+```
 
-INPUT: optional input file. When omitted, reads from stdin.
+Basic usage:
+```bash
+# From file
+jsonrepair input.json -o output.json
+
+# From stdin
+echo "{a: 1}" | jsonrepair
+
+# In-place edit
+jsonrepair --in-place broken.json
+
+# Streaming mode (low memory)
+jsonrepair --stream large_file.json
+
+# Pretty print
+jsonrepair --pretty input.json
+```
 
 Options:
-  -o, --output FILE         Write output to FILE (default stdout)
-      --in-place            Overwrite INPUT file (implies non-streaming)
-      --stream              Stream while parsing (lower memory)
-      --chunk-size BYTES    Chunk size for streaming (default 65536)
-      --ndjson-aggregate    Aggregate NDJSON values into a single array (streaming)
-      --pretty              Pretty-print output (non-streaming path)
-      --ensure-ascii        Escape non-ASCII as \uXXXX
-      --no-python-keywords  Disable Python True/False/None normalization
-      --no-undefined-null   Disable undefined -> null repair
-      --no-fence            Disable fenced code block stripping
-      --no-hash-comments    Disable # line comment tolerance
-      --no-nonfinite-null   Disable NaN/Infinity -> null normalization
-      --leading-zero POLICY Keep|Quote (default Keep)
-  -h, --help                Show help
+```
+-o, --output FILE       Output file (default: stdout)
+--in-place              Overwrite input file
+--stream                Streaming mode (low memory)
+--ndjson-aggregate      Aggregate NDJSON into array
+--pretty                Pretty-print output
+--ensure-ascii          Escape non-ASCII characters
+--no-python-keywords    Disable Python keyword normalization
+--no-undefined-null     Disable undefined → null
+--no-fence              Disable fence stripping
+--no-hash-comments      Disable # comments
 ```
 
-### Tips
+## Language Bindings
 
-- Use `--stream` for very large inputs to reduce peak memory. Tune `--chunk-size` for I/O.
-- `--ndjson-aggregate` collects multiple values into a single JSON array in streaming mode.
-- `--pretty` requires the `serde` feature (enabled by default).
+### Python
 
-## Options (high level)
+Native Python bindings using PyO3:
 
-- `tolerate_hash_comments: bool` — allow `#` outside strings (default: true)
-- `repair_undefined: bool` — convert `undefined` to `null` (default: true)
-- `leading_zero_policy: LeadingZeroPolicy` — `KeepAsNumber` | `QuoteAsString` (default: `KeepAsNumber`)
-- `fenced_code_blocks: bool` — strip ``` fences (default: true)
-- `logging: bool` — enable repair log (use `repair_to_string_with_log`)
-- `allow_python_keywords: bool` — normalize `True`/`False`/`None` (default: true)
-- `ensure_ascii: bool` — escape non-ASCII as `\uXXXX` (default: false)
-- `log_context_window: usize` — context window for log snippets (default: 10)
-- `log_json_path: bool` — attach JSON path to logs (default: false)
-- `normalize_js_nonfinite: bool` — normalize `NaN`/`Infinity`/`-Infinity` to `null` (default: true)
-- `stream_ndjson_aggregate: bool` — aggregate streaming NDJSON values into a single array on `flush()` (default: false)
-
-## Logging example
-
-```rust
-use jsonrepair::{Options, repair_to_string_with_log};
-
-let mut opts = Options::default();
-opts.log_context_window = 12;
-opts.log_json_path = true;
-
-let (_out, log) = repair_to_string_with_log("[1, 2 /*c*/, 3]", &opts)?;
-for e in log { println!("pos={} path={:?} msg={} ctx={}", e.position, e.path, e.message, e.context); }
+```bash
+pip install jsonrepair
 ```
 
-## Performance & Benchmarks
+```python
+import jsonrepair
 
-- Fast paths: `memchr` jumps only in syntax‑safe states; UTF‑8/Unicode safe; ASCII fast path.
-- **Quick Start**: `python scripts/run_benchmarks.py [profile]` (cross-platform)
-  - **Profiles**:
-    - `quick` - Fast iteration for development (~1-2 min)
-    - `standard` - Balanced accuracy and speed (~3-5 min) **[DEFAULT]**
-    - `heavy` - Maximum accuracy for official benchmarks (~8-12 min)
-    - `custom` - Use command-line args for custom configuration
-  - **Examples**:
-    - `python scripts/run_benchmarks.py quick` - Quick development test
-    - `python scripts/run_benchmarks.py standard` - Standard benchmark
-    - `python scripts/run_benchmarks.py heavy` - High-accuracy benchmark
-  - **Platform-specific launchers**:
-    - Windows: `scripts\run_benchmarks.bat [profile]`
-    - Linux/macOS: `./scripts/run_benchmarks.sh [profile]`
-  - **Outputs**: `python_bench.json` (raw data) and `docs/bench_table.md` (comparison table)
-- **Manual**:
-  - Python: `pip install json_repair` then `python scripts/py_bench.py --min-bytes 1048576 --target-sec 1.0 --warmup 3 > python_bench.json`
-  - Rust: `export JR_MIN_BYTES=1048576 JR_MEAS_SEC=3 JR_WARMUP_SEC=1 JR_SAMPLE_SIZE=5` then `cargo bench --bench container_bench`
-  - Aggregate: `python scripts/aggregate_bench.py > docs/bench_table.md`
-- **Notes**:
-  - Throughput (MiB/s): higher is better. Mean time (s): lower is better.
-  - Test data generators are verified to match between Python and Rust implementations.
-  - If Criterion warns about sample completion, try `quick` profile or increase `JR_MEAS_SEC`.
-  - See `docs/benchmark-python.md` for details, case matrix, and fairness guidelines.
+# Repair and parse
+data = jsonrepair.loads("{name: 'John', age: 30}")
+# {'name': 'John', 'age': 30}
 
-## References
+# Just repair, return string
+fixed = jsonrepair.repair_json("{a: 1}")
+# '{"a":1}'
 
-We drew inspiration from and aim for practical parity with:
+# Load from file
+data = jsonrepair.from_file('broken.json')
 
-- [jsonrepair (TypeScript)](https://github.com/josdejong/jsonrepair)
-- [json_repair (Python)](https://github.com/mangiucugna/json_repair)
+# Streaming API
+repairer = jsonrepair.StreamRepairer()
+for chunk in chunks:
+    if output := repairer.push(chunk):
+        process(output)
+if final := repairer.flush():
+    process(final)
+```
 
-This crate adapts many repair rules and test ideas to a Rust‑centric design focused on performance and streaming.
+See [python/](python/) for complete documentation and examples.
+
+### C/C++
+
+Build with C API:
+```bash
+cargo build --release --features c-api
+```
+
+This generates:
+- Header: `include/jsonrepair.h`
+- Library: `target/release/libjsonrepair.{so,dylib,dll}`
+
+Example:
+```c
+#include "jsonrepair.h"
+
+char* fixed = jsonrepair_repair("{a:1}");
+printf("%s
+", fixed);  // {"a":1}
+jsonrepair_free(fixed);
+```
+
+See [examples/c_example](examples/c_example/) for complete examples.
+
+### Go
+
+```go
+// #cgo LDFLAGS: -L./target/release -ljsonrepair
+// #include "include/jsonrepair.h"
+import "C"
+
+result := C.jsonrepair_repair(C.CString("{a:1}"))
+defer C.jsonrepair_free(result)
+fmt.Println(C.GoString(result))
+```
+
+See [examples/go_example](examples/go_example/) for complete examples.
+
+### Other Languages
+
+The C API works with any language supporting C FFI:
+
+- **Java**: JNA, JNI
+- **C#**: P/Invoke
+- **Node.js**: node-ffi, napi
+- **Ruby**: FFI gem
+
+## Performance
+
+This library uses a zero-copy architecture (hand-written recursive descent parser with `&str` slicing) optimized for:
+- Medium to large JSON (1KB - 1MB+)
+- API responses, database exports, config files
+- Batch processing, file parsing
+
+For NDJSON streams or heavily commented small objects, consider [llm_json](https://github.com/oramasearch/llm_json) which uses a different architecture optimized for those patterns.
+
+Run benchmarks:
+```bash
+python scripts/run_benchmarks.py
+```
+
+## Related Projects
+
+- **[json_repair (Python)](https://github.com/mangiucugna/json_repair)** - The original Python implementation that inspired this project
+- **[llm_json (Rust)](https://github.com/oramasearch/llm_json)** - Alternative Rust implementation, also based on json_repair
+- **[jsonrepair (TypeScript)](https://github.com/josdejong/jsonrepair)** - TypeScript implementation by Jos de Jong
+
+## Acknowledgments
+
+This project is inspired by and aims to be compatible with [json_repair](https://github.com/mangiucugna/json_repair) by Stefano Baccianella. We're grateful for the excellent design and comprehensive test suite that made this implementation possible.
 
 ## License
 
-MIT or Apache‑2.0
-
----
-
-## Additional Options & Benchmark Fairness
---------------------------------------
-
-- New option: ssume_valid_json_fastpath: bool`n  - When true and nsure_ascii is false, skip full serde validation for already-legal JSON and directly pass through.
-  - Default: false (safety first). Enable only if you are certain inputs are valid JSON.
-
-- Fairness notes for valid JSON benchmarks:
-  - jsonrepair defaults to strict (validates via serde). We also include an opt-in fastpath row (alid_json_fastpath).
-  - llm_json benches default to strict (skip_json_loads=false) for parity, plus a fastpath row with skip_json_loads=true.
-  - Report keys in docs/bench_table.md:
-    - alid_json/fixed (jsonrepair strict, ensure_ascii=false)
-    - alid_json_ensure_ascii/fixed (jsonrepair strict, ensure_ascii=true)
-    - alid_json_fastpath/fixed (jsonrepair opt-in fastpath)
-    - alid_json_strict/fixed (llm_json strict)
-    - alid_json_fastpath/fixed (llm_json fastpath)
-
+MIT or Apache-2.0

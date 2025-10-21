@@ -18,6 +18,9 @@ exclude = [
   "benches/*",
 ]
 
+[lib]
+crate-type = ["rlib", "cdylib", "staticlib"]
+
 [dependencies]
 memchr = "2"
 thiserror = "2"
@@ -38,12 +41,16 @@ predicates = "3"
 tempfile = "3"
 llm_json = "1.0.2"
 
+[build-dependencies]
+cbindgen = { version = "0.27", optional = true }
+
 
 [features]
 default = ["serde", "logging"]
 serde = ["dep:serde", "dep:serde_json"]
 logging = []
 compare-crates-io = []
+c-api = ["dep:cbindgen"]
 
 [[bench]]
 name = "repair_bench"
@@ -66,10 +73,12 @@ name = "container_llm_bench"
 harness = false
 
 [[bin]]
+name = "jsonrepair-cli"
+path = "src/bin/jsonrepair.rs"
+
+[[bin]]
 name = "jr"
 path = "src/bin/jr.rs"
-
-# The default binary name `jsonrepair` is provided by src/main.rs
 
 [package.metadata.docs.rs]
 all-features = true

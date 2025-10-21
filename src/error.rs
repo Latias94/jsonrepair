@@ -21,6 +21,7 @@ impl RepairError {
         Self { kind, position }
     }
 
+    #[cfg(feature = "serde")]
     pub fn from_serde(what: &str, err: serde_json::Error) -> Self {
         let pos = err.line(); // coarse fallback
         Self {

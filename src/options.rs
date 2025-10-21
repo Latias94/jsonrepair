@@ -99,7 +99,7 @@ impl Default for Options {
             number_quote_suspicious: true,
             compat_python_friendly: false,
             word_comment_markers: Vec::new(),
-        aggressive_truncation_fix: false,
+            aggressive_truncation_fix: false,
             python_style_separators: false,
             internal_no_stream_fallback: false,
         }

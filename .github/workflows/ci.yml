@@ -32,6 +32,9 @@ jobs:
       - name: Run tests
         run: cargo test --all-features
 
+      - name: Run C API tests
+        run: cargo test --features c-api --test ffi_tests
+
       - name: Run clippy
         run: cargo clippy --all-targets --all-features -- -D warnings
 

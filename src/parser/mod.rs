@@ -21,8 +21,6 @@ use lex::{
 use number::parse_number_token;
 use object::parse_object;
 use strings::{emit_json_string_from_lit, parse_string_literal_concat_fast};
-#[cfg(feature = "serde")]
-use serde::ser::Serialize;
 
 fn to_err(pos: usize, msg: impl Into<String>) -> RepairError {
     RepairError::new(RepairErrorKind::Parse(msg.into()), pos)
@@ -199,7 +197,13 @@ pub(crate) fn repair_to_writer_impl<W: std::io::Write>(
     parse_root_many(&mut s, opts, &mut emitter, &mut logger)?;
     emitter.flush_all()?;
     if opts.python_style_separators {
-        let s2 = repair_to_string_impl(input, &Options { python_style_separators: false, ..opts.clone() })?;
+        let s2 = repair_to_string_impl(
+            input,
+            &Options {
+                python_style_separators: false,
+                ..opts.clone()
+            },
+        )?;
         let separated = apply_python_separators(&s2);
         writer
             .write_all(separated.as_bytes())
@@ -777,8 +781,15 @@ fn apply_python_separators(s: &str) -> String {
             }
         } else {
             match ch {
-                '"' | '\'' => { in_str = true; quote = ch; out.push(ch); }
-                ':' | ',' => { out.push(ch); out.push(' '); }
+                '"' | '\'' => {
+                    in_str = true;
+                    quote = ch;
+                    out.push(ch);
+                }
+                ':' | ',' => {
+                    out.push(ch);
+                    out.push(' ');
+                }
                 _ => out.push(ch),
             }
         }

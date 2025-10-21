@@ -112,6 +112,87 @@ impl PyRepairOptions {
         format!("RepairOptions(ensure_ascii={}, allow_python_keywords={})",
                 self.inner.ensure_ascii, self.inner.allow_python_keywords)
     }
+
+    // Getters and setters for common options
+    #[getter]
+    fn ensure_ascii(&self) -> bool {
+        self.inner.ensure_ascii
+    }
+
+    #[setter]
+    fn set_ensure_ascii(&mut self, value: bool) {
+        self.inner.ensure_ascii = value;
+    }
+
+    #[getter]
+    fn tolerate_hash_comments(&self) -> bool {
+        self.inner.tolerate_hash_comments
+    }
+
+    #[setter]
+    fn set_tolerate_hash_comments(&mut self, value: bool) {
+        self.inner.tolerate_hash_comments = value;
+    }
+
+    #[getter]
+    fn repair_undefined(&self) -> bool {
+        self.inner.repair_undefined
+    }
+
+    #[setter]
+    fn set_repair_undefined(&mut self, value: bool) {
+        self.inner.repair_undefined = value;
+    }
+
+    #[getter]
+    fn allow_python_keywords(&self) -> bool {
+        self.inner.allow_python_keywords
+    }
+
+    #[setter]
+    fn set_allow_python_keywords(&mut self, value: bool) {
+        self.inner.allow_python_keywords = value;
+    }
+
+    #[getter]
+    fn fenced_code_blocks(&self) -> bool {
+        self.inner.fenced_code_blocks
+    }
+
+    #[setter]
+    fn set_fenced_code_blocks(&mut self, value: bool) {
+        self.inner.fenced_code_blocks = value;
+    }
+
+    #[getter]
+    fn normalize_js_nonfinite(&self) -> bool {
+        self.inner.normalize_js_nonfinite
+    }
+
+    #[setter]
+    fn set_normalize_js_nonfinite(&mut self, value: bool) {
+        self.inner.normalize_js_nonfinite = value;
+    }
+
+    #[getter]
+    fn stream_ndjson_aggregate(&self) -> bool {
+        self.inner.stream_ndjson_aggregate
+    }
+
+    #[setter]
+    fn set_stream_ndjson_aggregate(&mut self, value: bool) {
+        self.inner.stream_ndjson_aggregate = value;
+    }
+
+    #[getter]
+    fn logging(&self) -> bool {
+        self.inner.logging
+    }
+
+    #[setter]
+    fn set_logging(&mut self, value: bool) {
+        self.inner.logging = value;
+    }
 }
 
 impl Default for PyRepairOptions {
@@ -168,7 +249,7 @@ fn repair_json(
     let mut opts = if let Some(o) = options { o.inner.clone() } else { Options::default() };
     // function-level override keeps backward compatibility
     opts.ensure_ascii = ensure_ascii;
-    opts.python_style_separators = true;\n    opts.python_style_separators = true;
+    opts.python_style_separators = true;
     if _skip_json_loads {
         // Use fast path for already-valid JSON when caller signals skipping validation
         opts.assume_valid_json_fastpath = true;
@@ -339,7 +420,7 @@ fn repair_json_with_log(
 ) -> PyResult<(Py<PyAny>, Py<PyAny>)> {
     let mut opts = if let Some(o) = options { o.inner.clone() } else { Options::default() };
     opts.ensure_ascii = ensure_ascii;
-    opts.python_style_separators = true;\n    opts.python_style_separators = true;
+    opts.python_style_separators = true;
     let (repaired, log) = rust_repair_with_log(json_str, &opts)
         .map_err(|e| PyValueError::new_err(format!("Failed to repair JSON: {}", e)))?;
     let pylog = make_log_list(py, log);
