@@ -22,29 +22,43 @@
 static int tests_run = 0;
 static int tests_passed = 0;
 
+// NOTE: Guard multi-statement macros with do { ... } while (0)
+// to avoid unguarded statements when used in if/else contexts.
 #define TEST(name) \
-    printf("Testing: %s ... ", name); \
-    tests_run++;
+    do { \
+        printf("Testing: %s ... ", name); \
+        tests_run++; \
+    } while (0)
 
 #define PASS() \
-    printf("PASS\n"); \
-    tests_passed++;
+    do { \
+        printf("PASS\n"); \
+        tests_passed++; \
+    } while (0)
 
 #define FAIL(msg) \
-    printf("FAIL: %s\n", msg); \
-    exit(1);
+    do { \
+        printf("FAIL: %s\n", msg); \
+        exit(1); \
+    } while (0)
 
 #define ASSERT_NOT_NULL(ptr) \
-    if ((ptr) == NULL) FAIL("Expected non-NULL pointer")
+    do { \
+        if ((ptr) == NULL) FAIL("Expected non-NULL pointer"); \
+    } while (0)
 
 #define ASSERT_NULL(ptr) \
-    if ((ptr) != NULL) FAIL("Expected NULL pointer")
+    do { \
+        if ((ptr) != NULL) FAIL("Expected NULL pointer"); \
+    } while (0)
 
 #define ASSERT_STR_EQ(actual, expected) \
-    if (strcmp((actual), (expected)) != 0) { \
-        printf("\n  Expected: %s\n  Got: %s\n", (expected), (actual)); \
-        FAIL("String mismatch"); \
-    }
+    do { \
+        if (strcmp((actual), (expected)) != 0) { \
+            printf("\n  Expected: %s\n  Got: %s\n", (expected), (actual)); \
+            FAIL("String mismatch"); \
+        } \
+    } while (0)
 
 void test_simple_repair() {
     TEST("simple repair");
@@ -314,4 +328,3 @@ int main() {
         return 1;
     }
 }
-
