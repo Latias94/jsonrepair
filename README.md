@@ -254,6 +254,12 @@ This library uses a zero-copy architecture (hand-written recursive descent parse
 
 For NDJSON streams or heavily commented small objects, consider [llm_json](https://github.com/oramasearch/llm_json) which uses a different architecture optimized for those patterns.
 
+## Engine Notes
+
+- This project ships two engines and lets you choose at runtime:
+  - Recursive-descent (default): most stable and fully featured. Supports writer/streaming/NDJSON/logging/JSONPath.
+  - LLM scanner: a lightweight scanner optimized for LLM-style outputs. See `docs/LLM_ENGINE.md` for current status, perf and roadmap.
+
 Run benchmarks:
 ```bash
 python scripts/run_benchmarks.py

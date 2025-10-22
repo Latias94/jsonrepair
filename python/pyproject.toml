@@ -3,7 +3,7 @@ requires = ["maturin>=1.0,<2.0"]
 build-backend = "maturin"
 
 [project]
-name = "jsonrepair"
+name = "jsonrepair-rs"
 version = "0.1.0"
 description = "Fast JSON repair library - Rust-powered Python bindings"
 authors = [
@@ -35,13 +35,39 @@ classifiers = [
 Homepage = "https://github.com/Latias94/jsonrepair"
 Repository = "https://github.com/Latias94/jsonrepair"
 Documentation = "https://github.com/Latias94/jsonrepair/tree/main/python"
+"Bug Tracker" = "https://github.com/Latias94/jsonrepair/issues"
+Changelog = "https://github.com/Latias94/jsonrepair/blob/main/CHANGELOG.md"
+"Rust Crate" = "https://crates.io/crates/jsonrepair"
 
 [tool.maturin]
 features = ["pyo3/extension-module"]
 python-source = "python"
 module-name = "jsonrepair._jsonrepair"
+# Strip debug symbols for smaller wheels
+strip = true
+# Include necessary files in sdist
+include = [
+    "Cargo.toml",
+    "Cargo.lock",
+    "src/**",
+    "python/**",
+    "README.md",
+    "../src/**",
+    "../Cargo.toml",
+    "../LICENSE-MIT",
+    "../LICENSE-APACHE",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = "test_*.py"
+addopts = "-v --tb=short"
+
+[tool.ruff]
+line-length = 100
+target-version = "py38"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP"]
+ignore = []
 

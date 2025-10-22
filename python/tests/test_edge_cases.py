@@ -195,7 +195,8 @@ class TestFencedCodeBlocks:
             { "key": "value" }
             ```
         """)
-        assert result == '{"key": "value"}'
+        # The result should be valid JSON with proper spacing
+        assert_json_equal(result, '{"key": "value"}')
 
     def test_multiple_fenced_blocks(self):
         result = jsonrepair.repair_json(

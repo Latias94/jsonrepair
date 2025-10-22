@@ -1,7 +1,7 @@
 #[cfg(feature = "logging")]
 use crate::emit::StringEmitter;
 use crate::error::RepairError;
-use crate::options::Options;
+use crate::options::{EngineKind, Options};
 use std::io::Write;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -12,8 +12,50 @@ pub struct RepairLogEntry {
     pub path: Option<String>,
 }
 
+// Route to the selected engine at runtime (default: recursive-descent).
+// When the `llm-compat` feature is not compiled, always fall back to recursive-descent.
+#[inline]
+fn engine_repair_to_string(input: &str, opts: &Options) -> Result<String, RepairError> {
+    match opts.engine {
+        EngineKind::Recursive => crate::parser::repair_to_string_impl(input, opts),
+        EngineKind::LlmCompat => {
+            #[cfg(feature = "llm-compat")]
+            {
+                return crate::engines::llm::repair_to_string_impl(input, opts);
+            }
+            #[cfg(not(feature = "llm-compat"))]
+            {
+                return crate::parser::repair_to_string_impl(input, opts);
+            }
+        }
+        EngineKind::Auto => crate::parser::repair_to_string_impl(input, opts),
+    }
+}
+
+#[inline]
+fn engine_repair_to_writer<W: Write>(
+    input: &str,
+    opts: &Options,
+    writer: &mut W,
+) -> Result<(), RepairError> {
+    match opts.engine {
+        EngineKind::Recursive => crate::parser::repair_to_writer_impl(input, opts, writer),
+        EngineKind::LlmCompat => {
+            #[cfg(feature = "llm-compat")]
+            {
+                return crate::engines::llm::repair_to_writer_impl(input, opts, writer);
+            }
+            #[cfg(not(feature = "llm-compat"))]
+            {
+                return crate::parser::repair_to_writer_impl(input, opts, writer);
+            }
+        }
+        EngineKind::Auto => crate::parser::repair_to_writer_impl(input, opts, writer),
+    }
+}
+
 pub(crate) fn repair_to_string(input: &str, opts: &Options) -> Result<String, RepairError> {
-    crate::parser::repair_to_string_impl(input, opts)
+    engine_repair_to_string(input, opts)
 }
 
 pub(crate) fn repair_to_writer_streaming<W: Write>(
@@ -21,7 +63,7 @@ pub(crate) fn repair_to_writer_streaming<W: Write>(
     opts: &Options,
     writer: &mut W,
 ) -> Result<(), RepairError> {
-    crate::parser::repair_to_writer_impl(input, opts, writer)
+    engine_repair_to_writer(input, opts, writer)
 }
 
 #[cfg(feature = "logging")]

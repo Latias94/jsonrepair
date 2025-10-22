@@ -8,6 +8,16 @@ pub enum LeadingZeroPolicy {
     QuoteAsString,
 }
 
+#[derive(Clone, Debug, Copy, PartialEq, Eq)]
+pub enum EngineKind {
+    /// Auto selection (defaults to the recursive-descent engine for stability)
+    Auto,
+    /// Force the recursive-descent engine (current primary implementation)
+    Recursive,
+    /// Force the LLM-compatible scanner (independent implementation, behind `llm-compat`)
+    LlmCompat,
+}
+
 #[derive(Clone, Debug)]
 pub struct Options {
     /// Treat `#` as a line comment (in addition to // and /* */) when not inside strings.
@@ -76,6 +86,8 @@ pub struct Options {
     /// Internal flag to prevent recursive delegation to stream fallback. Not public API.
     #[doc(hidden)]
     pub internal_no_stream_fallback: bool,
+    /// Runtime engine selection: Auto/Recursive/LlmCompat. Default: Auto (stability first).
+    pub engine: EngineKind,
 }
 
 impl Default for Options {
@@ -102,6 +114,7 @@ impl Default for Options {
             aggressive_truncation_fix: false,
             python_style_separators: false,
             internal_no_stream_fallback: false,
+            engine: EngineKind::Auto,
         }
     }
 }

@@ -1,6 +1,8 @@
 mod classify;
 pub mod cli;
 mod emit;
+#[cfg(feature = "llm-compat")]
+mod engines;
 pub mod error;
 pub mod options;
 mod parser;

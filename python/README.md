@@ -1,4 +1,4 @@
-# jsonrepair - Fast JSON Repair for Python
+# jsonrepair-rs - Fast JSON Repair for Python
 
 A high-performance JSON repair library for Python, powered by Rust. This library provides a drop-in replacement for the popular [json_repair](https://github.com/mangiucugna/json_repair) library with better performance for most use cases.
 
@@ -23,8 +23,14 @@ A high-performance JSON repair library for Python, powered by Rust. This library
 ## 📦 Installation
 
 ```bash
-pip install jsonrepair
+pip install jsonrepair-rs
 ```
+
+**Supported Platforms:**
+- Linux (x86_64, aarch64)
+- macOS (Intel, Apple Silicon)
+- Windows (x64)
+- Python 3.8 - 3.14
 
 Or install from source:
 
@@ -33,6 +39,8 @@ cd python
 pip install maturin
 maturin develop
 ```
+
+> **For Maintainers**: See [PUBLISHING.md](PUBLISHING.md) for release instructions.
 
 ## 🎯 Quick Start
 
@@ -312,7 +320,7 @@ We provide a benchmark script to compare with `json_repair`:
 
 ```bash
 # Install both libraries
-pip install jsonrepair json-repair
+pip install jsonrepair-rs json-repair
 
 # Run benchmark
 python python/examples/benchmark.py

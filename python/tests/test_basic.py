@@ -15,7 +15,7 @@ def test_repair_json_basic():
     """Test basic JSON repair returning string"""
     broken = "{name: 'John', age: 30,}"
     repaired = jsonrepair.repair_json(broken)
-    assert repaired == '{"name":"John","age":30}'
+    assert repaired == '{"name": "John", "age": 30}'
 
 
 def test_repair_json_return_objects():

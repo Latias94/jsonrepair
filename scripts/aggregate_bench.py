@@ -149,7 +149,7 @@ def scan_rust() -> Dict[str, float]:
     rust: Dict[str,float] = {}
     if not CRIT_ROOT.exists():
         return rust
-    groups = {"container_fast_paths", "container_llm", "stream", "writer_vs_string"}
+    groups = {"container_fast_paths", "container_llm", "container_our_llm", "stream", "writer_vs_string"}
     for est in CRIT_ROOT.rglob("new/estimates.json"):
         parts = list(est.parts)
         if "criterion" not in parts:
@@ -160,11 +160,16 @@ def scan_rust() -> Dict[str, float]:
             if group not in groups:
                 continue
             # Normalize keys and label engine
-            if group in ("container_fast_paths", "container_llm"):
+            if group in ("container_fast_paths", "container_llm", "container_our_llm"):
                 bench_id = parts[cidx+2]
                 bench_param = parts[cidx+3]
                 case_key = f"{bench_id}/{bench_param}"
-                engine = "jsonrepair" if group == "container_fast_paths" else "llm_json"
+                if group == "container_fast_paths":
+                    engine = "jsonrepair"
+                elif group == "container_llm":
+                    engine = "llm_json"
+                else:
+                    engine = "jr_llm"
             elif group == "stream":
                 bench_param = parts[cidx+2]
                 case_key = f"{group}/{bench_param}"
@@ -246,6 +251,11 @@ def main():
                 add_case("llm_fast", key, mean_s)
             else:
                 add_case("llm_strict", key, mean_s)
+        elif engine == "jr_llm":
+            # Normalize valid json strict id
+            if key.startswith("valid_json_strict/"):
+                key = key.replace("valid_json_strict/", "valid_json/")
+            add_case("jr_llm_strict", key, mean_s)
         elif engine == "jsonrepair(stream)":
             add_case("jr_stream", key, mean_s)
         elif engine == "jsonrepair(writer)":
@@ -255,7 +265,7 @@ def main():
 
     # Container cases (non-streaming) — strict only (fastpaths moved to the dedicated valid JSON table)
     print("## Container Cases (strict)")
-    header = ["case","size(bytes)","python","jsonrepair(strict)","llm_json(strict)"]
+    header = ["case","size(bytes)","python","jsonrepair(strict)","jsonrepair(llm)","llm_json(strict)"]
     print("| "+" | ".join(header)+" |")
     print("|"+"---|"*len(header))
     for key in sorted(k for k in cases.keys()
@@ -269,13 +279,14 @@ def main():
         py_cell = fmt(py_row[0], sz) if py_row else "-"
         row = cases.get(key, {})
         jr_s = fmt(row["jr_strict"], sz) if "jr_strict" in row else "-"
+        jr_llm = fmt(row["jr_llm_strict"], sz) if "jr_llm_strict" in row else "-"
         llm_s = fmt(row["llm_strict"], sz) if "llm_strict" in row else "-"
-        print(f"| {key} | {sz} | {py_cell} | {jr_s} | {llm_s} |")
+        print(f"| {key} | {sz} | {py_cell} | {jr_s} | {jr_llm} | {llm_s} |")
 
     # Valid JSON dedicated section
     print("")
     print("## Valid JSON Cases (strict vs fastpath)")
-    header = ["case","size(bytes)","jsonrepair(strict)","jsonrepair(fast)","llm_json(strict)","llm_json(fast)"]
+    header = ["case","size(bytes)","jsonrepair(strict)","jsonrepair(fast)","jsonrepair(llm)","llm_json(strict)","llm_json(fast)"]
     print("| "+" | ".join(header)+" |")
     print("|"+"---|"*len(header))
     for key in ["valid_json/fixed", "valid_json_ensure_ascii/fixed", "valid_json_fastpath/fixed"]:
@@ -284,9 +295,10 @@ def main():
         row = cases.get(key, {})
         jr_s = fmt(row.get("jr_strict", 0.0), sz) if "jr_strict" in row else "-"
         jr_f = fmt(row.get("jr_fast", 0.0), sz) if "jr_fast" in row else "-"
+        jr_llm = fmt(row.get("jr_llm_strict", 0.0), sz) if "jr_llm_strict" in row else "-"
         llm_s = fmt(row.get("llm_strict", 0.0), sz) if "llm_strict" in row else "-"
         llm_f = fmt(row.get("llm_fast", 0.0), sz) if "llm_fast" in row else "-"
-        print(f"| {key} | {sz} | {jr_s} | {jr_f} | {llm_s} | {llm_f} |")
+        print(f"| {key} | {sz} | {jr_s} | {jr_f} | {jr_llm} | {llm_s} | {llm_f} |")
     print("")
     stream_keys = sorted(k for k in cases.keys() if k.startswith("stream/"))
     if stream_keys:

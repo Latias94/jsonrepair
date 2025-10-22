@@ -56,6 +56,10 @@ serde = ["dep:serde", "dep:serde_json"]
 logging = []
 compare-crates-io = []
 c-api = ["dep:cbindgen"]
+# Use a simpler Vec<char> + index scanner inspired by llm_json
+# When enabled, core repair functions use the llm-compatible engine
+# instead of the hand-written recursive descent parser.
+llm-compat = []
 
 [[bench]]
 name = "repair_bench"
@@ -75,6 +79,10 @@ harness = false
 
 [[bench]]
 name = "container_llm_bench"
+harness = false
+
+[[bench]]
+name = "our_llm_bench"
 harness = false
 
 [[bin]]

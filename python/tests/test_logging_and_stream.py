@@ -9,7 +9,8 @@ import jsonrepair
 def test_repair_json_with_log_returns_tuple():
     s, log = jsonrepair.repair_json_with_log("{a:1, /*c*/ b:2}")
     assert isinstance(s, str)
-    assert s == "{\"a\":1,\"b\":2}"
+    # Python style separators add spaces after colons and commas
+    assert s == '{"a": 1, "b": 2}'
     assert isinstance(log, list)
 
 
@@ -29,8 +30,8 @@ def test_stream_repairer_push_and_flush():
     tail = sr.flush()
     if tail:
         outs.append(tail)
-    # Expect two repaired objects
-    assert outs == ["{\"a\":1}", "{\"b\":2}"]
+    # Expect two repaired objects with Python-style separators
+    assert outs == ['{"a": 1}', '{"b": 2}']
 
 
 def test_stream_repairer_ndjson_aggregate():
