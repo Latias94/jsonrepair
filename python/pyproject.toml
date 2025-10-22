@@ -45,18 +45,6 @@ python-source = "python"
 module-name = "jsonrepair._jsonrepair"
 # Strip debug symbols for smaller wheels
 strip = true
-# Include necessary files in sdist
-include = [
-    "Cargo.toml",
-    "Cargo.lock",
-    "src/**",
-    "python/**",
-    "README.md",
-    "../src/**",
-    "../Cargo.toml",
-    "../LICENSE-MIT",
-    "../LICENSE-APACHE",
-]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
