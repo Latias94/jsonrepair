@@ -6,8 +6,8 @@ Note: Our implementation uses &str with gradient descent, which provides good pe
 while offering additional features like streaming and Writer APIs.
 """
 
-import time
 import sys
+import time
 
 try:
     import jsonrepair
@@ -35,44 +35,44 @@ def benchmark_case(name, broken_json, iterations=1000):
     print(f"Iterations: {iterations}")
     print(f"Input length: {len(broken_json)} chars")
     print(f"{'='*60}")
-    
+
     # Warm up
     for _ in range(10):
         jsonrepair.loads(broken_json)
         json_repair.loads(broken_json)
-    
+
     # Benchmark jsonrepair (Rust)
     start = time.perf_counter()
     for _ in range(iterations):
         result_rust = jsonrepair.loads(broken_json)
     time_rust = time.perf_counter() - start
-    
+
     # Benchmark json_repair (Python)
     start = time.perf_counter()
     for _ in range(iterations):
         result_python = json_repair.loads(broken_json)
     time_python = time.perf_counter() - start
-    
+
     # Verify results match
     assert result_rust == result_python, "Results don't match!"
-    
+
     # Calculate speedup
     speedup = time_python / time_rust
-    
-    print(f"\nResults:")
+
+    print("\nResults:")
     print(f"  jsonrepair (Rust):   {time_rust:.4f}s ({time_rust/iterations*1000:.3f}ms per iteration)")
     print(f"  json_repair (Python): {time_python:.4f}s ({time_python/iterations*1000:.3f}ms per iteration)")
     print(f"  Speedup: {speedup:.1f}x faster 🚀")
-    
+
     return speedup
 
 
 def main():
     print("🏁 jsonrepair Performance Benchmark")
     print("=" * 60)
-    
+
     speedups = []
-    
+
     # Test 1: Simple object
     speedup = benchmark_case(
         "Simple Object",
@@ -80,7 +80,7 @@ def main():
         iterations=10000
     )
     speedups.append(speedup)
-    
+
     # Test 2: Array with trailing comma
     speedup = benchmark_case(
         "Array with Trailing Comma",
@@ -88,7 +88,7 @@ def main():
         iterations=10000
     )
     speedups.append(speedup)
-    
+
     # Test 3: Comments
     speedup = benchmark_case(
         "JSON with Comments",
@@ -103,7 +103,7 @@ def main():
         iterations=5000
     )
     speedups.append(speedup)
-    
+
     # Test 4: Nested structure
     speedup = benchmark_case(
         "Nested Structure",
@@ -121,7 +121,7 @@ def main():
         iterations=5000
     )
     speedups.append(speedup)
-    
+
     # Test 5: Large array
     large_array = "[" + ", ".join([f"{{id: {i}, name: 'Item {i}'}}" for i in range(100)]) + "]"
     speedup = benchmark_case(
@@ -130,7 +130,7 @@ def main():
         iterations=1000
     )
     speedups.append(speedup)
-    
+
     # Test 6: Unicode
     speedup = benchmark_case(
         "Unicode Characters",
@@ -138,7 +138,7 @@ def main():
         iterations=5000
     )
     speedups.append(speedup)
-    
+
     # Test 7: Incomplete JSON
     speedup = benchmark_case(
         "Incomplete JSON",
@@ -146,7 +146,7 @@ def main():
         iterations=5000
     )
     speedups.append(speedup)
-    
+
     # Test 8: Fenced code block
     speedup = benchmark_case(
         "Fenced Code Block",
@@ -162,7 +162,7 @@ def main():
         iterations=5000
     )
     speedups.append(speedup)
-    
+
     # Summary
     print(f"\n{'='*60}")
     print("📊 SUMMARY")

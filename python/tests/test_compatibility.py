@@ -5,9 +5,10 @@ https://github.com/mangiucugna/json_repair
 These tests ensure our Rust implementation is compatible with the Python json_repair library.
 """
 
-import pytest
-import jsonrepair
 import json
+
+import jsonrepair
+import pytest
 
 
 def assert_json_equal(actual: str, expected: str):

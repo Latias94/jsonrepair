@@ -3,6 +3,7 @@ Basic tests for logging APIs and streaming interface in jsonrepair Python bindin
 """
 
 import json
+
 import jsonrepair
 
 

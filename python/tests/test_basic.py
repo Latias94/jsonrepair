@@ -4,11 +4,12 @@ Basic tests for jsonrepair Python bindings
 These tests cover the basic functionality and API surface.
 """
 
-import pytest
-import jsonrepair
-import tempfile
-import os
 import io
+import os
+import tempfile
+
+import jsonrepair
+import pytest
 
 
 def test_repair_json_basic():
@@ -153,7 +154,7 @@ def test_from_file():
     with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.json') as f:
         f.write("{name: 'John', age: 30}")
         temp_path = f.name
-    
+
     try:
         result = jsonrepair.from_file(temp_path)
         assert result['name'] == 'John'
@@ -170,7 +171,7 @@ def test_load():
         temp_path = f.name
 
     try:
-        with open(temp_path, 'r') as f:
+        with open(temp_path) as f:
             result = jsonrepair.load(f)
         assert result['name'] == 'John'
         assert result['age'] == 30

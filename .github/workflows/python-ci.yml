@@ -49,18 +49,21 @@ jobs:
         run: |
           pip install maturin[patchelf] pytest
 
-      - name: Build and install package (Linux/macOS)
-        if: runner.os != 'Windows'
+      - name: Build wheel
         run: |
           cd python
-          maturin develop --release
+          maturin build --release
 
-      - name: Build and install package (Windows)
+      - name: Install package (Linux/macOS)
+        if: runner.os != 'Windows'
+        run: |
+          pip install python/target/wheels/*.whl
+
+      - name: Install package (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          cd python
-          maturin develop --release
+          pip install (Get-Item python/target/wheels/*.whl)
 
       - name: Run tests
         run: |
@@ -194,10 +197,14 @@ jobs:
         run: |
           pip install maturin pytest json-repair
 
-      - name: Build and install package
+      - name: Build wheel
         run: |
           cd python
-          maturin develop --release
+          maturin build --release
+
+      - name: Install package
+        run: |
+          pip install python/target/wheels/*.whl
 
       - name: Run compatibility tests
         run: |

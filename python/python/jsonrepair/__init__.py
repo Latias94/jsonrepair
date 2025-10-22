@@ -20,17 +20,17 @@ Example:
 """
 
 from ._jsonrepair import (
-    repair_json,
-    loads,
-    load,
-    from_file,
-    # logging variants
-    repair_json_with_log,
-    loads_with_log,
-    from_file_with_log,
+    RepairOptions,
     # streaming
     StreamRepairer,
-    RepairOptions,
+    from_file,
+    from_file_with_log,
+    load,
+    loads,
+    loads_with_log,
+    repair_json,
+    # logging variants
+    repair_json_with_log,
 )
 
 __version__ = "0.1.0"

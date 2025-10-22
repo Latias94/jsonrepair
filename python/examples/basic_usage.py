@@ -4,6 +4,7 @@ Basic usage examples for jsonrepair Python bindings
 
 import jsonrepair
 
+
 def example_basic_repair():
     """Basic JSON repair"""
     print("=== Basic Repair ===")
@@ -104,11 +105,11 @@ def example_return_objects():
     """Use return_objects parameter"""
     print("=== Return Objects ===")
     broken = "{name: 'John', age: 30}"
-    
+
     # Return string
     string_result = jsonrepair.repair_json(broken)
     print(f"String result: {string_result} (type: {type(string_result)})")
-    
+
     # Return object
     object_result = jsonrepair.repair_json(broken, return_objects=True)
     print(f"Object result: {object_result} (type: {type(object_result)})")
@@ -118,11 +119,11 @@ def example_ensure_ascii():
     """Use ensure_ascii parameter"""
     print("=== Ensure ASCII ===")
     broken = "{'name': '统一码'}"
-    
+
     # Without ensure_ascii
     normal = jsonrepair.repair_json(broken)
     print(f"Normal:       {normal}")
-    
+
     # With ensure_ascii
     ascii_only = jsonrepair.repair_json(broken, ensure_ascii=True)
     print(f"ASCII only:   {ascii_only}")
@@ -139,6 +140,6 @@ if __name__ == '__main__':
     example_nested()
     example_return_objects()
     example_ensure_ascii()
-    
+
     print("✅ All examples completed successfully!")
 

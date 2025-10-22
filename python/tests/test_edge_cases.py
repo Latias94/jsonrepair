@@ -4,9 +4,10 @@ Edge case tests ported from json_repair library
 These tests cover complex and edge cases to ensure robustness.
 """
 
-import pytest
-import jsonrepair
 import json
+
+import jsonrepair
+import pytest
 
 
 def assert_json_equal(actual: str, expected: str):

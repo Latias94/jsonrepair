@@ -1,6 +1,6 @@
 """Type stubs for jsonrepair Python bindings."""
 
-from typing import Any, Optional, IO, Tuple, List, Dict
+from typing import IO, Any, Dict, List, Optional, Tuple
 
 class RepairOptions:
     """
@@ -8,7 +8,7 @@ class RepairOptions:
     
     All parameters are optional and have sensible defaults for LLM/JS outputs.
     """
-    
+
     def __init__(
         self,
         tolerate_hash_comments: bool = True,
@@ -30,45 +30,45 @@ class RepairOptions:
         assume_valid_json_fastpath: bool = False,
         word_comment_markers: List[str] = [],
     ) -> None: ...
-    
+
     def __repr__(self) -> str: ...
-    
+
     # Property accessors
     @property
     def ensure_ascii(self) -> bool: ...
     @ensure_ascii.setter
     def ensure_ascii(self, value: bool) -> None: ...
-    
+
     @property
     def tolerate_hash_comments(self) -> bool: ...
     @tolerate_hash_comments.setter
     def tolerate_hash_comments(self, value: bool) -> None: ...
-    
+
     @property
     def repair_undefined(self) -> bool: ...
     @repair_undefined.setter
     def repair_undefined(self, value: bool) -> None: ...
-    
+
     @property
     def allow_python_keywords(self) -> bool: ...
     @allow_python_keywords.setter
     def allow_python_keywords(self, value: bool) -> None: ...
-    
+
     @property
     def fenced_code_blocks(self) -> bool: ...
     @fenced_code_blocks.setter
     def fenced_code_blocks(self, value: bool) -> None: ...
-    
+
     @property
     def normalize_js_nonfinite(self) -> bool: ...
     @normalize_js_nonfinite.setter
     def normalize_js_nonfinite(self, value: bool) -> None: ...
-    
+
     @property
     def stream_ndjson_aggregate(self) -> bool: ...
     @stream_ndjson_aggregate.setter
     def stream_ndjson_aggregate(self, value: bool) -> None: ...
-    
+
     @property
     def logging(self) -> bool: ...
     @logging.setter
@@ -86,9 +86,9 @@ class StreamRepairer:
         >>> if final := repairer.flush():
         ...     process(final)
     """
-    
+
     def __init__(self, options: Optional[RepairOptions] = None) -> None: ...
-    
+
     def push(self, chunk: str) -> Optional[str]:
         """
         Push a UTF-8 chunk; returns a JSON string when a complete value is produced.
@@ -100,7 +100,7 @@ class StreamRepairer:
             Repaired JSON string if a complete value was produced, None otherwise
         """
         ...
-    
+
     def flush(self) -> Optional[str]:
         """
         Flush any buffered output.
